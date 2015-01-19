@@ -2,6 +2,7 @@ var logger = require('winston'),
     EventEmitter = require('events').EventEmitter,
     assert = require("assert"),
     util = require('util'),
+    appUtils = require('./lib/utils.js'),
     auth = require('./lib/auth.js'),
     metadata = require('./lib/metadata.js'),
     search = require('./lib/search.js'),
@@ -14,6 +15,7 @@ var KEY_LOGIN = "Login";
 var KEY_LOGOUT = "Logout";
 var KEY_SEARCH = "Search";
 var KEY_ACTION = "Action";
+var KEY_UPDATE = "Update";
 var KEY_GET_OBJECT = "GetObject";
 var KEY_GET_METADATA = "GetMetadata";
 var KEY_METADATA_VERSION = "MetadataVersion";
@@ -47,6 +49,14 @@ module.exports.getClient = function(loginUrl, username, password) {
 
             return;
         }
+
+        if (systemData[KEY_GET_METADATA]) systemData[KEY_GET_METADATA] = appUtils.getValidUrl(systemData[KEY_GET_METADATA], loginUrl);
+        if (systemData[KEY_GET_OBJECT]) systemData[KEY_GET_OBJECT] = appUtils.getValidUrl(systemData[KEY_GET_OBJECT], loginUrl);
+        if (systemData[KEY_SEARCH]) systemData[KEY_SEARCH] = appUtils.getValidUrl(systemData[KEY_SEARCH], loginUrl);
+        if (systemData[KEY_UPDATE]) systemData[KEY_UPDATE] = appUtils.getValidUrl(systemData[KEY_UPDATE], loginUrl);
+        if (systemData[KEY_ACTION]) systemData[KEY_ACTION] = appUtils.getValidUrl(systemData[KEY_ACTION], loginUrl);
+        if (systemData[KEY_LOGIN]) systemData[KEY_LOGIN] = appUtils.getValidUrl(systemData[KEY_LOGIN], loginUrl);
+        if (systemData[KEY_LOGOUT]) systemData[KEY_LOGOUT] = appUtils.getValidUrl(systemData[KEY_LOGOUT], loginUrl);
 
         client.configure(systemData);
 

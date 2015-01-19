@@ -94,7 +94,6 @@ describe('test client.getResources meta functionality', function() {
         mochaTest.timeout(TEST_TIMEOUT);
 
         client.once("connection.success", function(){
-
             client.getResources(function(error, data) {
                 assert.ifError(error);
                 assert.isNotNull(data, "Data is present");
@@ -131,103 +130,6 @@ describe('test client.getResources meta functionality', function() {
         });
     });
 });
-
-describe('test client.getAllForeignKeys meta functionality', function() {
-    it('Client retrieves a list of all foreign keys metadata', function(done) {
-        var mochaTest = this;
-        var client = rets.getClient(config.url, config.username, config.password);
-
-        assert(client, "Client is present");
-        mochaTest.timeout(TEST_TIMEOUT)
-        client.once("connection.success", function(){
-
-            client.getAllForeignKeys(function(error, data) {
-                assert.ifError(error);
-                assert.isNotNull(data, "Data is present");
-                assert(data.ForeignKeys, "data.ForeignKeys is present");
-                assert.typeOf(data.ForeignKeys, 'array', "data.ForeignKeys is an array");
-                for(var fkItem = 0; fkItem < data.ForeignKeys.length; fkItem++) {
-                    assert.isNotNull(data.ForeignKeys[fkItem]);
-                    assert(data.ForeignKeys[fkItem].ForeignKeyID, "data.ForeignKeys["+fkItem+"] ForeignKeyID field is present");
-                    assert(data.ForeignKeys[fkItem].ParentResourceID, "data.ForeignKeys["+fkItem+"] ParentResourceID field is present");
-                    assert(data.ForeignKeys[fkItem].ParentClassID, "data.ForeignKeys["+fkItem+"] ParentClassID field is present");
-                    assert(data.ForeignKeys[fkItem].ParentSystemName, "data.ForeignKeys["+fkItem+"] ParentSystemName field is present");
-                    assert(data.ForeignKeys[fkItem].ChildResourceID, "data.ForeignKeys["+fkItem+"] ChildResourceID field is present");
-                    assert(data.ForeignKeys[fkItem].ChildClassID, "data.ForeignKeys["+fkItem+"] ChildClassID field is present");
-                    assert(data.ForeignKeys[fkItem].ChildSystemName, "data.ForeignKeys["+fkItem+"] ChildSystemName field is present");
-                }
-
-                client.logout(function(error){
-                    assert.ifError(error);
-                    done();
-                });
-
-            });
-        });
-
-        client.once("metadata.all.foreignkeys.success", function(data) {
-            assert(data, "data is present");
-        });
-
-        client.once("metadata.all.foreignkeys.failure", function(error){
-            assert.ifError(error, "Metadata call should not have failed");
-        });
-
-        client.once("connection.failure", function(error){
-            assert.ifError(error, "getClient failure");
-        });
-    });
-});
-
-describe('test client.getForeignKey meta functionality', function() {
-    it('Client retrieves an individual foreign key metadata entry', function(done) {
-        var mochaTest = this;
-        var client = rets.getClient(config.url, config.username, config.password);
-        mochaTest.timeout(TEST_TIMEOUT);
-        assert(client, "Client is present");
-
-        client.once("connection.success", function(){
-
-            client.getForeignKeys(config.testResourceType, function(error, data) {
-                assert.ifError(error);
-                assert.isNotNull(data, "Data is present");
-
-                assert(data.ForeignKeys, "data.ForeignKeys is present");
-                assert.typeOf(data.ForeignKeys, 'array', "data.ForeignKeys is an array");
-
-                for(var fkItem = 0; fkItem < data.ForeignKeys; fkItem++) {
-                    assert.isNotNull(data.ForeignKeys[fkItem]);
-                    assert(data.ForeignKeys[fkItem].ForeignKeyID, "data.ForeignKeys["+fkItem+"] ForeignKeyID field is present");
-                    assert(data.ForeignKeys[fkItem].ParentResourceID, "data.ForeignKeys["+fkItem+"] ParentResourceID field is present");
-                    assert(data.ForeignKeys[fkItem].ParentClassID, "data.ForeignKeys["+fkItem+"] ParentClassID field is present");
-                    assert(data.ForeignKeys[fkItem].ParentSystemName, "data.ForeignKeys["+fkItem+"] ParentSystemName field is present");
-                    assert(data.ForeignKeys[fkItem].ChildResourceID, "data.ForeignKeys["+fkItem+"] ChildResourceID field is present");
-                    assert(data.ForeignKeys[fkItem].ChildClassID, "data.ForeignKeys["+fkItem+"] ChildClassID field is present");
-                    assert(data.ForeignKeys[fkItem].ChildSystemName, "data.ForeignKeys["+fkItem+"] ChildSystemName field is present");
-                }
-
-                client.logout(function(error){
-                    assert.ifError(error);
-                    done();
-                });
-
-            });
-        });
-
-        client.once("metadata.foreignkeys.success", function(data) {
-            assert(data, "data is present");
-        });
-
-        client.once("metadata.foreignkeys.failure", function(error){
-            assert.ifError(error, "Metadata call should not have failed");
-        });
-
-        client.once("connection.failure", function(error){
-            assert.ifError(error, "getClient failure");
-        });
-    });
-});
-
 
 describe('test client.getAllClass meta functionality', function() {
     it('Client retrieves a list of all class metadata', function(done) {

@@ -15,9 +15,7 @@ describe('test login and logout functionality', function() {
         client.once('connection.success', function(){
             assert(client.retsVersion, "RETS version is present");
             assert(client.retsServer, "RETS server is present");
-            assert(client.memberName, "memberName is present");
             assert(client.user, "user is present");
-            assert(client.broker, "broker is present");
             assert(client.metadataVersion, "metadataVersion is present");
             assert(client.metadataTimestamp, "metadataTimestamp is present");
             assert(client.minMetadataTimestamp, "minMetadataTimestamp is present");
