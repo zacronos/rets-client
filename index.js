@@ -118,7 +118,7 @@ var getClientFromSettings = function(settings) {
 
     clientHeaders['RETS-Version'] = settings.version || 'RETS/1.7.2';
 
-    addAuthHeaders(settings, clientHeaders);
+    addUAAuthHeaders(settings, clientHeaders);
 
     var defaults = {
         jar:true,
@@ -168,7 +168,7 @@ var getClientFromSettings = function(settings) {
  * @param settings hash containing additional settings for creating authorization headers
  * @param the modifiable headers hash
  */
-var addAuthHeaders = function(settings, headers) {
+var addUAAuthHeaders = function(settings, headers) {
     if (!settings || !headers || typeof headers !== 'object') return;
 
     // use specified user agent
