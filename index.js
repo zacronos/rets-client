@@ -120,8 +120,10 @@ var getClientFromSettings = function(settings) {
 
     addUAAuthHeaders(settings, clientHeaders);
 
+    var cookieJar = request.jar();
+
     var defaults = {
-        jar:true,
+        jar:cookieJar,
         headers:clientHeaders
     };
 
