@@ -1,11 +1,12 @@
 {
   "name": "rets-client",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "description": "A RETS client (Real Estate Transaction Standard).",
   "main": "index.js",
   "dependencies": {
+    "crypto": "0.0.3",
     "formidable": "~1.0.15",
-    "request": "~2.39.0",
+    "request": "^2.55.0",
     "stream-buffers": "~0.2.5",
     "tough-cookie": "^0.13.0",
     "winston": "~0.7.3",

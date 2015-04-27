@@ -1,6 +1,8 @@
 var logger = require('winston'),
     EventEmitter = require('events').EventEmitter,
     assert = require("assert"),
+    crypto = require('crypto'),
+    request = require('request'),
     util = require('util'),
     appUtils = require('./lib/utils.js'),
     auth = require('./lib/auth.js'),
@@ -26,6 +28,13 @@ var KEY_RETS_SERVER = "retsServer";
 
 module.exports = new EventEmitter();
 
+var clientHeaders = {
+    'User-Agent': "Node-Rets/1.0"
+};
+
+var baseRetsSession;
+
+
 /**
  * Connects to a RETS Service and creates a RETS client instance.
  *
@@ -40,9 +49,97 @@ module.exports = new EventEmitter();
  */
 module.exports.getClient = function(loginUrl, username, password) {
 
+    var settings = {
+        loginUrl:loginUrl,
+        username:username,
+        password:password
+    };
+
+    return getClientFromSettings(settings);
+};
+
+module.exports.getClientUAAuth = function(userAgent, userAgentPassword, sessionId) {
+    var settings = {
+        userAgent:userAgent,
+        userAgentPassword:userAgentPassword,
+        sessionId:sessionId
+    };
+
+    return getClientFromSettings(settings);
+};
+
+/**
+ * Connects to a RETS Service and creates a RETS client instance.
+ *
+ * @param settings
+ *
+ *      loginUrl RETS login URL (i.e http://<MLS_DOMAIN>/rets/login.ashx)
+ *      username username credential
+ *      password password credential
+ *      version rets version
+ *
+ *      //RETS-UA-Authorization
+ *      userAgent
+ *      userAgentPassword
+ *      sessionId
+ *
+ * @event connection.success Connection succeeded.
+ * @event connection.failure(error) Failed to connect.
+ *
+ * @return RETS Client
+ */
+module.exports.getClientFromSettings = function(settings) {
+    return getClientFromSettings(settings);
+};
+
+/**
+ * Connects to a RETS Service and creates a RETS client instance.
+ *
+ * @param settings
+ *
+ *      loginUrl RETS login URL (i.e http://<MLS_DOMAIN>/rets/login.ashx)
+ *      username username credential
+ *      password password credential
+ *      version rets version
+ *
+ *      //RETS-UA-Authorization
+ *      userAgent
+ *      userAgentPassword
+ *      sessionId
+ *
+ * @event connection.success Connection succeeded.
+ * @event connection.failure(error) Failed to connect.
+ *
+ * @return RETS Client
+ */
+var getClientFromSettings = function(settings) {
+
     var client = new Client();
 
-    auth.login(loginUrl, username, password, function(error, systemData) {
+    clientHeaders['RETS-Version'] = settings.version || 'RETS/1.7.2';
+
+    addAuthHeaders(settings, clientHeaders);
+
+    var defaults = {
+        jar:true,
+        headers:clientHeaders
+    };
+
+    baseRetsSession = request.defaults(defaults);
+
+    var options = {
+        uri:settings.loginUrl
+    };
+
+    if (settings.username && settings.password) {
+        options.auth = {
+            'user': settings.username,
+            'pass': settings.password,
+            'sendImmediately': false
+        };
+    }
+
+    auth.login(baseRetsSession.defaults(options), function(error, systemData) {
         if (error) {
 
             client.emit('connection.failure', error);
@@ -50,13 +147,13 @@ module.exports.getClient = function(loginUrl, username, password) {
             return;
         }
 
-        if (systemData[KEY_GET_METADATA]) systemData[KEY_GET_METADATA] = appUtils.getValidUrl(systemData[KEY_GET_METADATA], loginUrl);
-        if (systemData[KEY_GET_OBJECT]) systemData[KEY_GET_OBJECT] = appUtils.getValidUrl(systemData[KEY_GET_OBJECT], loginUrl);
-        if (systemData[KEY_SEARCH]) systemData[KEY_SEARCH] = appUtils.getValidUrl(systemData[KEY_SEARCH], loginUrl);
-        if (systemData[KEY_UPDATE]) systemData[KEY_UPDATE] = appUtils.getValidUrl(systemData[KEY_UPDATE], loginUrl);
-        if (systemData[KEY_ACTION]) systemData[KEY_ACTION] = appUtils.getValidUrl(systemData[KEY_ACTION], loginUrl);
-        if (systemData[KEY_LOGIN]) systemData[KEY_LOGIN] = appUtils.getValidUrl(systemData[KEY_LOGIN], loginUrl);
-        if (systemData[KEY_LOGOUT]) systemData[KEY_LOGOUT] = appUtils.getValidUrl(systemData[KEY_LOGOUT], loginUrl);
+        if (systemData[KEY_GET_METADATA]) systemData[KEY_GET_METADATA] = appUtils.getValidUrl(systemData[KEY_GET_METADATA], settings.loginUrl);
+        if (systemData[KEY_GET_OBJECT]) systemData[KEY_GET_OBJECT] = appUtils.getValidUrl(systemData[KEY_GET_OBJECT], settings.loginUrl);
+        if (systemData[KEY_SEARCH]) systemData[KEY_SEARCH] = appUtils.getValidUrl(systemData[KEY_SEARCH], settings.loginUrl);
+        if (systemData[KEY_UPDATE]) systemData[KEY_UPDATE] = appUtils.getValidUrl(systemData[KEY_UPDATE], settings.loginUrl);
+        if (systemData[KEY_ACTION]) systemData[KEY_ACTION] = appUtils.getValidUrl(systemData[KEY_ACTION], settings.loginUrl);
+        if (systemData[KEY_LOGIN]) systemData[KEY_LOGIN] = appUtils.getValidUrl(systemData[KEY_LOGIN], settings.loginUrl);
+        if (systemData[KEY_LOGOUT]) systemData[KEY_LOGOUT] = appUtils.getValidUrl(systemData[KEY_LOGOUT], settings.loginUrl);
 
         client.configure(systemData);
 
@@ -64,6 +161,27 @@ module.exports.getClient = function(loginUrl, username, password) {
     });
 
     return client;
+};
+
+/**
+ * Creates additional headers for elevated authorization rights
+ * @param settings hash containing additional settings for creating authorization headers
+ * @param the modifiable headers hash
+ */
+var addAuthHeaders = function(settings, headers) {
+    if (!settings || !headers || typeof headers !== 'object') return;
+
+    // use specified user agent
+    if (settings.userAgent) {
+        headers['User-Agent'] = settings.userAgent;
+
+        // add RETS-UA-Authorization header
+        if (settings.userAgentPassword) {
+            var a1 = crypto.createHash('md5').update([settings.userAgent, settings.userAgentPassword].join(":")).digest('hex');
+            var retsUaAuth = crypto.createHash('md5').update([a1, "", settings.sessionId || "", settings.version || headers['RETS-Version']].join(":")).digest('hex');
+            headers['RETS-UA-Authorization'] = "Digest " + retsUaAuth;
+        }
+    }
 };
 
 /**
@@ -96,11 +214,23 @@ Client.prototype.configure = function(systemData) {
     self.minMetadataTimestamp = self.systemData[KEY_MIN_METADATA_TIMESTAMP];
 
     //metadata module
-    self.metadataModule = metadata(self.systemData[KEY_GET_METADATA]);
+    self.metadataModule = metadata(
+        baseRetsSession.defaults({
+            uri:self.systemData[KEY_GET_METADATA]
+        })
+    );
     //search module
-    self.searchModule = search(self.systemData[KEY_SEARCH]);
+    self.searchModule = search(
+        baseRetsSession.defaults({
+            uri:self.systemData[KEY_SEARCH]
+        })
+    );
     //object module
-    self.objectModule = object(self.systemData[KEY_GET_OBJECT]);
+    self.objectModule = object(
+        baseRetsSession.defaults({
+            uri:self.systemData[KEY_GET_OBJECT]
+        })
+    );
 };
 
 /**
@@ -138,7 +268,6 @@ var processRetsResponse = function(client, error, data, eventSuccess, eventFailu
 /**
  * Logout RETS user.
  *
- * @param url Logout URL
  * @param callback(error)
  *
  * @event logout.success Disconnect was successful
@@ -148,7 +277,9 @@ var processRetsResponse = function(client, error, data, eventSuccess, eventFailu
 Client.prototype.logout = function(callback) {
     var self = this;
 
-    auth.logout(self.systemData[KEY_LOGOUT], function(error){
+    auth.logout(baseRetsSession.defaults({
+        uri:self.systemData[KEY_LOGOUT]
+    }), function(error){
         processRetsResponse(self, error, null, "logout.success", "logout.failure", callback);
     });
 };
