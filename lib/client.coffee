@@ -46,7 +46,7 @@ class Client
         @headers['RETS-UA-Authorization'] = "Digest " + retsUaAuth
 
     @baseRetsSession = request.defaults
-      jar: true
+      jar: request.jar()
       headers: @headers
 
       
