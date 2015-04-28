@@ -1,6 +1,6 @@
 {
   "name": "rets-promise",
-  "version": "1.1.9",
+  "version": "1.1.10",
   "description": "A RETS (Real Estate Transaction Standard) client with a clean, promise-based interface.",
   "main": "index.js",
   "dependencies": {
