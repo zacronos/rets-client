@@ -32,7 +32,8 @@
     "estate",
     "transaction",
     "standard",
-    "promise"
+    "promise",
+    "mls"
   ],
   "homepage": "https://github.com/realtymaps/rets-promise",
   "author": "RealtyMapster, LLC",
