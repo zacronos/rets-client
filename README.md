@@ -1,15 +1,15 @@
 rets-promise
-===========
+============
 A RETS (Real Estate Transaction Standard) client for Node.js with a clean, promise-based interface.
 
 Forked originally from [rets-client](https://github.com/sbruno81/rets-client), with the user-facing API rewritten
 with breaking changes to use a Promise-based interface.  Promises in this module are provided by
-[Bluebird](https://github.com/petkaantonov/bluebird).  This library contains some CoffeeScript, but may be used in any
-Node app, whether CoffeeScript is in use or not.
+[Bluebird](https://github.com/petkaantonov/bluebird).  This library contains some CoffeeScript, but may be used just
+as easily in a Node app using Javascript or CoffeeScript.
 
 The original module was developed against a server running RETS v1.7.2, so there may be incompatibilities with other
 versions.  However, the developers at RealtyMaps want this library to work against any RETS server versions that are
-in current use, so issue tickets describing the problems or (even better) pull requests that fix interactions
+in current use, so issue tickets describing problems or (even better) pull requests that fix interactions
 with other RETS versions are welcomed.
 
 [RETS Specifications](http://www.reso.org/specifications)
@@ -23,7 +23,7 @@ Ideally, pull requests should include tests and match existing code style.
 
 #### TODO
 - Update dependency versions
-- move off https://github.com/Gozala/crypto to use node-native instead
+- move off https://github.com/Gozala/crypto to use node-native crypto module instead
 - add support for UA password as described here: https://github.com/sbruno81/rets-client/issues/1
 -- might already be handled
 - make sure listeners are deregistering so app will exit after logout
