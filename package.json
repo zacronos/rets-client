@@ -1,11 +1,11 @@
 {
   "name": "rets-promise",
-  "version": "1.1.11",
+  "version": "1.1.13",
   "description": "A RETS (Real Estate Transaction Standard) client with a clean, promise-based interface.",
   "main": "index.js",
   "dependencies": {
-    "bluebird": "2.x",
-    "coffee-script": "1.x",
+    "bluebird": "^2.9.25",
+    "coffee-script": "^1.8.0",
     "crypto": "0.0.3",
     "formidable": "~1.0.15",
     "request": "^2.55.0",
