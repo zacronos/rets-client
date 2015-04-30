@@ -28,7 +28,29 @@ Library was developed against a server running RETS v1.7.2.
         console.log("connection to RETS server failed ~ %s", error);
     });
 ```    
-
+##### Custom Client Configuration
+```javascript
+    //create rets-client
+    var client = require('rets-client').getClientFromSettings({
+        loginUrl:retsLoginUrl,
+        username:retsUser,
+        password:retsPassword,
+        version:'RETS/1.7.2',
+        userAgent:'RETS node-client/1.0'
+    });
+...
+```    
+##### Client configuration with UA Authorization
+```javascript
+    //create rets-client
+    var client = require('rets-client').getClientFromSettings({
+        version:'RETS/1.7.2',
+        userAgent:userAgent,
+        userAgentPassword:userAgentPassword,
+        sessionId:sessionId
+    });
+...
+```   
 ##### Get Resources Metadata
 
 ```javascript
