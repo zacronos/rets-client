@@ -125,19 +125,19 @@ var getClientFromSettings = function(settings) {
         headers:clientHeaders
     };
 
-    baseRetsSession = request.defaults(defaults);
-
-    var options = {
-        uri:settings.loginUrl
-    };
-
     if (settings.username && settings.password) {
-        options.auth = {
+        defaults.auth = {
             'user': settings.username,
             'pass': settings.password,
             'sendImmediately': false
         };
     }
+
+    baseRetsSession = request.defaults(defaults);
+
+    var options = {
+        uri:settings.loginUrl
+    };
 
     auth.login(baseRetsSession.defaults(options), function(error, systemData) {
         if (error) {
