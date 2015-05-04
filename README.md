@@ -1,32 +1,31 @@
-rets-promise
-============
-A RETS (Real Estate Transaction Standard) client for Node.js with a clean, promise-based interface.
+rets-client
+===========
+A RETS (Real Estate Transaction Standard) client for Node.js.  This README documents the version 2.x branch, which is
+currently under unstable development.  Code written for version 1.x of rets-client will not work with 2.x.  A
+Promise-based interface is provided for now, and later an optional stream-based interface will also be available.
+Promises in this module are provided by [Bluebird](https://github.com/petkaantonov/bluebird).
 
-Forked originally from [rets-client](https://github.com/sbruno81/rets-client), with the user-facing API rewritten
-with breaking changes to use a Promise-based interface.  Promises in this module are provided by
-[Bluebird](https://github.com/petkaantonov/bluebird).  This library contains some CoffeeScript, but may be used just
-as easily in a Node app using Javascript or CoffeeScript.
+This library contains some CoffeeScript, but may be used just as easily in a Node app using Javascript or CoffeeScript.
 
 The original module was developed against a server running RETS v1.7.2, so there may be incompatibilities with other
-versions.  However, the developers at RealtyMaps want this library to work against any RETS server versions that are
-in current use, so issue tickets describing problems or (even better) pull requests that fix interactions
-with other RETS versions are welcomed.
+versions.  However, we want this library to work against any RETS servers that are in current use, so issue tickets
+describing problems or (even better) pull requests that fix interactions with servers running other versions of RETS
+are welcomed.
 
 [RETS Specifications](http://www.reso.org/specifications)
 
 ## Contributions
-Issue tickets and pull requests are welcome.  Unless a breaking refactor is necessary, the `auth`, `metadata`,
-`multipart`, `object`, `search`, and `utils` files in lib/ should be kept JavaScript in order to facilitate PRs
-to/from other `rets-client` forks.
-
-Ideally, pull requests should include tests and match existing code style.
+Issue tickets and pull requests are welcome.  Ideally, pull requests should include tests and match existing code style.
+Breaking changes are currently acceptable on the 2.0.0-unstable branch; once this branch is merged to master, only
+backward-compatible PRs will be accepted.
 
 #### TODO
-- Update dependency versions
-- move off https://github.com/Gozala/crypto to use node-native crypto module instead
+- create optional streaming interface 
+- update dependency versions
 - add support for UA password as described here: https://github.com/sbruno81/rets-client/issues/1
--- might already be handled
-- make sure listeners are deregistering so app will exit after logout
+ - this might already be handled
+- don't store password or other sensitive bytes in accessible mem (good security practice)
+- create unit tests -- specifically ones that run off example RETS data rather than requiring access to a real RETS server
 
 
 ## Example RETS Session

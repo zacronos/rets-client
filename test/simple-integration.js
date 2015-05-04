@@ -46,7 +46,7 @@ module.exports = function(settings, photoId) {
           console.log("-------- Field " + tableItem + " --------");
           outputFields(data.Fields[tableItem], ['MetadataEntryID', 'SystemName', 'ShortName', 'LongName', 'DataType']);
         }
-        return data.Fields
+        return data.Fields;
       }).then(function (fieldsData) {
         var plucked = [];
         for (var fieldItem = 0; fieldItem < fieldsData.length; fieldItem++) {
