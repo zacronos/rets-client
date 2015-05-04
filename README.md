@@ -22,9 +22,6 @@ backward-compatible PRs will be accepted.
 #### TODO
 - create optional streaming interface 
 - update dependency versions
-- add support for UA password as described here: https://github.com/sbruno81/rets-client/issues/1
- - this might already be handled
-- don't store password or other sensitive bytes in accessible mem (good security practice)
 - create unit tests -- specifically ones that run off example RETS data rather than requiring access to a real RETS server
 
 

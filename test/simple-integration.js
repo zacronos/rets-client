@@ -54,8 +54,8 @@ module.exports = function(settings, photoId) {
         }
         return plucked;
       }).then(function (fields) {
-        //perform a query using DQML -- pass resource, class, and query, and optionally a limit
-        return client.search.query("OpenHouse", "OPENHOUSE", "(OpenHouseType=PUBLIC),(ActiveYN=1)")
+        //perform a query using DQML2 -- pass resource, class, and query, and options
+        return client.search.query("OpenHouse", "OPENHOUSE", "(OpenHouseType=PUBLIC),(ActiveYN=1)", {limit: 10})
         .then(function (results) {
           console.log("===========================================");
           console.log("========  OpenHouse Query Results  ========");
