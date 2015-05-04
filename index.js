@@ -558,17 +558,19 @@ Client.prototype.searchRets = function(_queryOptions, callback) {
  * @param queryString Rets query string. See RETS specification - (ex: MatrixModifiedDT=2014-01-01T00:00:00.000+)
  * @param callback(error, data) (optional)
  * @param _limit (optional) Limits the number of records returned.
+ * @param _offset (optional) Results offset.
+ * @param _count (optional) Controls whether the server’s response includes a count.
  *
  * @event query.success(data) Query is successful
  * @event query.failure(error) Query failed
  */
-Client.prototype.query = function(resourceType, classType, queryString, callback, _limit) {
+Client.prototype.query = function(resourceType, classType, queryString, callback, _limit, _offset, _count) {
     var self = this;
 
     self.searchModule.query(resourceType, classType, queryString, function(error, data){
-        processRetsResponse(self, error, data, "query.success", "query.failure", callback);
-    },
-    _limit);
+            processRetsResponse(self, error, data, "query.success", "query.failure", callback);
+        },
+        _limit, _offset, _count);
 };
 
 /**

@@ -81,7 +81,14 @@ describe('test client.query functionality', function() {
                 client.query(
                     config.testResourceType,
                     config.testClassType,
-                    "MatrixModifiedDT=" + dateStr.substring(0, dateStr.length-1) + "+");
+                    "MatrixModifiedDT=" + dateStr.substring(0, dateStr.length-1) + "+",
+                    function(error, data) {
+                        assert.isNotNull(data, "Search data is present");
+                    },
+                    10, //limit
+                    1, //offset
+                    0 //count
+                );
             });
 
             client.once('metadata.table.failure', function(error){
