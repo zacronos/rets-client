@@ -120,3 +120,66 @@ describe('test client.query functionality', function() {
     });
 });
 
+describe('test client.queryWithOpts functionality', function() {
+    it('Client invokes rets targeted query and parsing', function(done) {
+        var mochaTest = this;
+        var client = rets.getClient(config.url, config.username, config.password);
+
+        mochaTest.timeout(TEST_TIMEOUT);
+        assert(client, "Client is present");
+
+        client.once('connection.success', function(){
+            //ensure that search results match fields from table metadata
+            client.getTable(config.testResourceType, config.testClassType);
+            var fields;
+
+            client.once('metadata.table.success', function(table) {
+                assert.isNotNull(table, "Table data is present");
+
+                var tMinus5Days = new Date();
+                tMinus5Days.setDate(tMinus5Days.getDate()-1);
+
+                var dateStr = tMinus5Days.toISOString();
+                fields = table.Fields;
+
+                client.queryWithOpts(
+                    config.testResourceType,
+                    config.testClassType,
+                    "MatrixModifiedDT=" + dateStr.substring(0, dateStr.length-1) + "+",
+                    {limit:10, offset:1, count:1},
+                    function(error, data) {
+                        assert.isNotNull(data, "Search data is present");
+                    }
+                );
+            });
+
+            client.once('metadata.table.failure', function(error){
+                assert.ifError(error);
+            });
+
+            client.once('query.success', function(data) {
+                assert.isNotNull(data, "Data is present");
+                for(var dataItem = 0; dataItem < data.length; dataItem++) {
+                    for(var fieldItem = 0; fieldItem < fields.length; fieldItem++) {
+                        assert.isNotNull(data[dataItem][fields[fieldItem].SystemName], "The field " + fields[fieldItem].SystemName + " is not found within record.");
+                    }
+                }
+
+                client.logout(function(error){
+                    assert.ifError(error);
+                    done();
+                });
+            });
+        });
+
+        client.once("query.failure", function(error){
+            assert.ifError(error, "Query call should not have failed");
+        });
+
+        client.once("connection.failure", function(error){
+            assert.ifError(error, "getClient failure");
+        });
+    });
+});
+
+

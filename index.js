@@ -574,6 +574,36 @@ Client.prototype.query = function(resourceType, classType, queryString, callback
 };
 
 /**
+ *
+ * Helper that performs a targeted RETS query and parses results.
+ *
+ * @param resourceType Rets resource type (ex: Property)
+ * @param classType  Rets class type (ex: RESI)
+ * @param queryString Rets query string. See RETS specification - (ex: MatrixModifiedDT=2014-01-01T00:00:00.000+)
+ * @param _options Search query options (optional).
+ *        See RETS specification for query options.
+ *
+ *        Default values query params:
+ *
+ *           queryType:'DMQL2',
+ *           format:'COMPACT-DECODED',
+ *           count:1,
+ *           standardNames:0,
+ *           restrictedIndicator:'***',
+ *           limit:"NONE"
+ *
+ *           Please note that queryType and format are immutable.
+ * @param callback(error, data) (optional)
+ */
+Client.prototype.queryWithOpts = function(resourceType, classType, queryString, _options, callback) {
+    var self = this;
+
+    self.searchModule.queryWithOpts(resourceType, classType, queryString, _options, function(error, data) {
+            processRetsResponse(self, error, data, "query.success", "query.failure", callback);
+        });
+};
+
+/**
  * Retrieves RETS object data.
  *
  * @param resourceType Rets resource type (ex: Property)
