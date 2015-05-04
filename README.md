@@ -139,9 +139,9 @@ Library was developed against a server running RETS v1.7.2.
 
             fields = table.Fields;
 
-            //pass resource, class, and DQML query
-            client.query("OpenHouse", "OPENHOUSE", 
-            "(OpenHouseType=PUBLIC),(ActiveYN=1)", function(error, data) {
+            //pass resource, class, and DQML2 query
+            client.queryWithOpts("OpenHouse", "OPENHOUSE", 
+            "(OpenHouseType=PUBLIC),(ActiveYN=1)", {limit:100, offset:1}, function(error, data) {
 
                 if (error) {
                     console.log(error);
