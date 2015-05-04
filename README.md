@@ -28,7 +28,33 @@ backward-compatible PRs will be accepted.
 - create unit tests -- specifically ones that run off example RETS data rather than requiring access to a real RETS server
 
 
-## Example RETS Session
+## Example Usage
+
+##### Client Configuration
+```javascript
+    //create rets-client
+    var clientSettings = {
+        loginUrl:retsLoginUrl,
+        username:retsUser,
+        password:retsPassword,
+        version:'RETS/1.7.2',
+        userAgent:'RETS node-client/1.0'
+    };
+...
+```    
+##### Client Configuration with UA Authorization
+```javascript
+    //create rets-client
+    var clientSettings = {
+        version:'RETS/1.7.2',
+        userAgent:userAgent,
+        userAgentPassword:userAgentPassword,
+        sessionId:sessionId
+    };
+...
+```
+
+#### RETS Session
 ```javascript
   var rets = require('rets-promise');
   var outputFields = function(obj, fields) {
@@ -38,7 +64,7 @@ backward-compatible PRs will be accepted.
     console.log("");
   };
   // establish connection to RETS server which auto-logs out when we're done
-  rets.getAutoLogoutClient(settings, function (client) {
+  rets.getAutoLogoutClient(clientSettings, function (client) {
     //get resources metadata
     return client.metadata.getResources()
       .then(function (data) {

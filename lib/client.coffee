@@ -45,19 +45,22 @@ class Client
         retsUaAuth = crypto.createHash('md5').update([a1, "", @settings.sessionId || "", @settings.version || headers['RETS-Version']].join(":")).digest('hex')
         @headers['RETS-UA-Authorization'] = "Digest " + retsUaAuth
 
-    @baseRetsSession = request.defaults
+    defaults =
       jar: request.jar()
       headers: @headers
+      
+    if @settings.username && @settings.password
+      defaults.auth =
+        'user': @settings.username
+        'pass': @settings.password
+        'sendImmediately': false
+        
+    @baseRetsSession = request.defaults defaults
 
       
   login: () ->
     options =
       uri: @settings.loginUrl
-    if @settings.username && @settings.password
-      options.auth =
-        'user': @settings.username
-        'pass': @settings.password
-        'sendImmediately': false
     Promise.fromNode (callback) =>
       auth.login @baseRetsSession.defaults(options), callback
     .then (systemData) =>
