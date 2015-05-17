@@ -251,7 +251,7 @@ var processRetsResponse = function(client, error, data, eventSuccess, eventFailu
     assert(client, "Client is present");
 
     if (error) {
-        if (callback)
+        if(typeof callback === "function")
             callback(error);
 
         if (eventFailure)
@@ -260,7 +260,7 @@ var processRetsResponse = function(client, error, data, eventSuccess, eventFailu
         return;
     }
 
-    if (callback)
+    if(typeof callback === "function")
         callback(error, data);
 
     if (eventSuccess)
@@ -627,13 +627,13 @@ Client.prototype.getObject = function(resourceType, objectType, objectId, callba
     self.objectModule.getObject(resourceType, objectType, objectId, function(error, contentType, data) {
 
         if (error) {
-            if (callback)
+            if(typeof callback === "function")
                 callback(error);
 
             self.emit("object.failure", error);
         }
 
-        if (callback)
+        if(typeof callback === "function")
             callback(error, contentType, data);
 
         self.emit("object.success", {contentType:contentType, data:data});
