@@ -1,5 +1,8 @@
-var logger = require('winston'),
-    EventEmitter = require('events').EventEmitter,
+/*jshint node:true */
+/* jshint -W097 */
+'use strict';
+
+var EventEmitter = require('events').EventEmitter,
     assert = require("assert"),
     crypto = require('crypto'),
     request = require('request'),
