@@ -7,6 +7,15 @@ Library was developed against a server running RETS v1.7.2.
 
 [RETS Specification](http://www.reso.org/specifications)
 
+### Future work
+This is the rets-client 1.x branch -- development has begun on a 2.x branch, which will NOT be backward compatible.
+This new branch will use a [Promise](https://github.com/petkaantonov/bluebird) and stream-based API, rather than the
+current events and callback API.  If you are interested, please take a look at the 2.x branch, and feel free to open
+issue tickets or PRs against it.  Note however that the 2.x branch is considered unstable; this means we might make
+additional breaking changes to the API.  Eventually, the 2.x branch will be merged to master, and at that time it will
+be considered stable.
+
+
 #### Example RETS Session
 
 
