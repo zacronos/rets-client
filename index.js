@@ -1,8 +1,8 @@
-
 var Promise = require('bluebird');
 var coffee = require('coffee-script');
 coffee.register();
 
+var replycodes = require('./lib/replycodes');
 var Client = require('./lib/client');
 
 /*  Available settings:
@@ -17,6 +17,7 @@ var Client = require('./lib/client');
  *      sessionId
  */
 module.exports = {
+  replycode: replycodes.codeMap,
   Client: Client,
   getAutoLogoutClient: function(settings, handler) {
     var client = new Client(settings);
