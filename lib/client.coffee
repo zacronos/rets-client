@@ -17,7 +17,7 @@ URL_KEYS =
   ACTION: "Action"
   LOGIN: "Login"
   LOGOUT: "Logout"
-  
+
 OTHER_KEYS =
   MEMBER_NAME: "MemberName"
   USER: "User"
@@ -34,7 +34,7 @@ class Client
     @headers =
       'User-Agent': "Node-Rets/1.0"
       'RETS-Version': @settings.version || 'RETS/1.7.2'
-      
+
     if @settings.userAgent
       # use specified user agent
       @headers['User-Agent'] = @settings.userAgent
@@ -48,16 +48,16 @@ class Client
     defaults =
       jar: request.jar()
       headers: @headers
-      
+
     if @settings.username && @settings.password
       defaults.auth =
         'user': @settings.username
         'pass': @settings.password
         'sendImmediately': false
-        
+
     @baseRetsSession = request.defaults defaults
 
-      
+
   login: () ->
     options =
       uri: @settings.loginUrl
@@ -66,9 +66,9 @@ class Client
     .then (systemData) =>
       @systemData = systemData
       @urls = {}
-      for key,val in URL_KEYS
-        if @systemData[URL_KEYS.GET_METADATA]
-          @urls[URL_KEYS.GET_METADATA] = appUtils.getValidUrl(@systemData[URL_KEYS.GET_METADATA], @settings.loginUrl)
+      for key,val of URL_KEYS
+        if @systemData[val]
+          @urls[val] = appUtils.getValidUrl(@systemData[val], @settings.loginUrl)
       @retsVersion = @systemData[OTHER_KEYS.RETS_VERSION]
       @retsServer = @systemData[OTHER_KEYS.RETS_SERVER]
       @memberName = @systemData[OTHER_KEYS.MEMBER_NAME]
@@ -78,23 +78,23 @@ class Client
       @metadataTimestamp = @systemData[OTHER_KEYS.METADATA_TIMESTAMP]
       @minMetadataTimestamp = @systemData[OTHER_KEYS.MIN_METADATA_TIMESTAMP]
 
-      metadataModule = metadata @baseRetsSession.defaults uri: @systemData[URL_KEYS.GET_METADATA]
+      metadataModule = metadata @baseRetsSession.defaults uri: @urls[URL_KEYS.GET_METADATA]
       @metadata = {}
       for own method of metadataModule
         @metadata[method] = Promise.promisify metadataModule[method], metadataModule
-  
-      searchModule = search @baseRetsSession.defaults uri: @systemData[URL_KEYS.SEARCH]
+
+      searchModule = search @baseRetsSession.defaults uri: @urls[URL_KEYS.SEARCH]
       @search = {}
       for own method of searchModule
         @search[method] = Promise.promisify searchModule[method], searchModule
-  
-      objectsModule = object @baseRetsSession.defaults uri: @systemData[URL_KEYS.GET_OBJECT]
+
+      objectsModule = object @baseRetsSession.defaults uri: @urls[URL_KEYS.GET_OBJECT]
       @objects = {}
       for own method of objectsModule
         @objects[method] = Promise.promisify objectsModule[method], objectsModule
 
-      @logoutRequest = @baseRetsSession.defaults uri: @systemData[URL_KEYS.LOGOUT]
-      
+      @logoutRequest = @baseRetsSession.defaults uri: @urls[URL_KEYS.LOGOUT]
+
       return @
 
   # Logs the user out of the current session
