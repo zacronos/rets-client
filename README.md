@@ -53,7 +53,7 @@ backward-compatible PRs will be accepted.
 
 #### RETS Session
 ```javascript
-  var rets = require('rets-promise');
+  var rets = require('rets-client');
   var outputFields = function(obj, fields) {
     for (var i=0; i<fields.length; i++) {
       console.log(fields[i]+": "+obj[fields[i]]);
