@@ -1,3 +1,7 @@
+/*jshint node:true */
+/* jshint -W097 */
+'use strict';
+
 var config = require('./testconfig.json'),
     assert = require('chai').assert,
     rets = require('../../index.js');

@@ -1,8 +1,10 @@
+/*jshint node:true */
+/* jshint -W097 */
+'use strict';
+
 var config = require('../testconfig.json'),
     assert = require('chai').assert,
-    rets = require('../../../index.js'),
-    utils = require('../../../lib/utils.js'),
-    xmlParser = require('xml2js').parseString;
+    rets = require('../../../index.js');
 
 var TEST_TIMEOUT = 10000;
 
