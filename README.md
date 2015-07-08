@@ -54,6 +54,8 @@ backward-compatible PRs will be accepted.
 #### RETS Session
 ```javascript
   var rets = require('rets-client');
+  var fs = require('fs');
+  var photoId = '12345'; // <--- dummy example ID!
   var outputFields = function(obj, fields) {
     for (var i=0; i<fields.length; i++) {
       console.log(fields[i]+": "+obj[fields[i]]);
@@ -106,7 +108,7 @@ backward-compatible PRs will be accepted.
         return plucked;
       }).then(function (fields) {
         //perform a query using DQML2 -- pass resource, class, and query, and options
-        return client.search.queryWithOpts("OpenHouse", "OPENHOUSE", "(OpenHouseType=PUBLIC),(ActiveYN=1)", {limit:100, offset:1})
+        return client.search.query("OpenHouse", "OPENHOUSE", "(OpenHouseType=PUBLIC),(ActiveYN=1)", {limit:100, offset:1})
         .then(function (results) {
           console.log("===========================================");
           console.log("========  OpenHouse Query Results  ========");
