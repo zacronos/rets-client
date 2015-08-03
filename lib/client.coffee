@@ -55,6 +55,9 @@ class Client
         'pass': @settings.password
         'sendImmediately': false
 
+    if @settings.proxyUrl
+      defaults.proxy = @settings.proxyUrl
+    
     @baseRetsSession = request.defaults defaults
 
 
