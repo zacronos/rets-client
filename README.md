@@ -1,11 +1,13 @@
 rets-client
 ===========
-A RETS (Real Estate Transaction Standard) client for Node.js.  This README documents the version 2.x branch, which is
-currently under unstable development.  Code written for version 1.x of rets-client will not work with 2.x.  A
-Promise-based interface is provided for now, and later an optional stream-based interface will also be available.
-Promises in this module are provided by [Bluebird](https://github.com/petkaantonov/bluebird).
+A RETS (Real Estate Transaction Standard) client for Node.js.
 
-This library contains some CoffeeScript, but may be used just as easily in a Node app using Javascript or CoffeeScript.
+Version 2.x of rets-client has a completely different interface from the 1.x version -- code written for 1.x will not
+work with 2.x.  This interface uses promises, and future development plans include an optional stream-based interface
+for better performance with large datasets and/or large objects.
+
+This library is written primarily in CoffeeScript, but may be used just as easily in a Node app using Javascript or
+CoffeeScript.  Promises in this module are provided by [Bluebird](https://github.com/petkaantonov/bluebird).
 
 The original module was developed against a server running RETS v1.7.2, so there may be incompatibilities with other
 versions.  However, we want this library to work against any RETS servers that are in current use, so issue tickets
@@ -15,9 +17,8 @@ are welcomed.
 [RETS Specifications](http://www.reso.org/specifications)
 
 ## Contributions
-Issue tickets and pull requests are welcome.  Ideally, pull requests should include tests and match existing code style.
-Breaking changes are currently acceptable on the 2.0.0-unstable branch; once this branch is merged to master, only
-backward-compatible PRs will be accepted.
+Issue tickets and pull requests are welcome.  Pull requests must be backward-compatible to be considered, and ideally
+should match existing code style.
 
 #### TODO
 - create optional streaming interface 
