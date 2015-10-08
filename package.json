@@ -33,6 +33,10 @@
     "mls"
   ],
   "author": "Steve Bruno <stevenrbruno@icloud.com>",
+  "contributors": [
+    "Steve Bruno <stevenrbruno@icloud.com>",
+    "Joe Ibershoff <joe@realtymaps.com>"
+  ],
   "license": "The MIT License (MIT)",
   "bugs": {
     "url": "https://github.com/sbruno81/rets-client/issues"
