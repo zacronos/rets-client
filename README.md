@@ -1,200 +1,147 @@
 rets-client
 ===========
+A RETS (Real Estate Transaction Standard) client for Node.js.
 
-Node.js RETS client (Real Estate Transaction Standard)
+Version 2.x of rets-client has a completely different interface from the 1.x version -- code written for 1.x will not
+work with 2.x.  If you wish to continue to use the 1.x version, you can use the
+[v1 branch](https://github.com/sbruno81/rets-client/tree/v1).
 
-Library was developed against a server running RETS v1.7.2.
+This interface uses promises, and future development plans include an optional stream-based interface
+for better performance with large datasets and/or large objects.
 
-[RETS Specification](http://www.reso.org/specifications)
+This library is written primarily in CoffeeScript, but may be used just as easily in a Node app using Javascript or
+CoffeeScript.  Promises in this module are provided by [Bluebird](https://github.com/petkaantonov/bluebird).
 
-### Future work
-This is the rets-client 1.x branch -- development has begun on a 2.x branch, which will NOT be backward compatible.
-This new branch will use a [Promise](https://github.com/petkaantonov/bluebird) and stream-based API, rather than the
-current events and callback API.  If you are interested, please take a look at the 2.x branch, and feel free to open
-issue tickets or PRs against it.  Note however that the 2.x branch is considered unstable; this means we might make
-additional breaking changes to the API.  Eventually, the 2.x branch will be merged to master, and at that time it will
-be considered stable.
+The original module was developed against a server running RETS v1.7.2, so there may be incompatibilities with other
+versions.  However, we want this library to work against any RETS servers that are in current use, so issue tickets
+describing problems or (even better) pull requests that fix interactions with servers running other versions of RETS
+are welcomed.
+
+[RETS Specifications](http://www.reso.org/specifications)
+
+## Contributions
+Issue tickets and pull requests are welcome.  Pull requests must be backward-compatible to be considered, and ideally
+should match existing code style.
+
+#### TODO
+- create optional streaming interface 
+- create unit tests -- specifically ones that run off example RETS data rather than requiring access to a real RETS server
 
 
-#### Example RETS Session
+## Example Usage
 
-
-##### Create a Client Instance (Login)
-
+##### Client Configuration
 ```javascript
     //create rets-client
-    var client = require('rets-client').getClient(retsLoginUrl, retsUser, retsPassword);
-
-    //connection success event
-    client.once('connection.success', function() {
-        console.log("RETS Server connection success!");
-        console.log("RETS version: " + client.retsVersion);
-        console.log("Member name: " + client.memberName);
-    });
-
-    //connection failure event
-    client.once('connection.failure', function(error) {
-        console.log("connection to RETS server failed ~ %s", error);
-    });
-```    
-##### Custom Client Configuration
-```javascript
-    //create rets-client
-    var client = require('rets-client').getClientFromSettings({
+    var clientSettings = {
         loginUrl:retsLoginUrl,
         username:retsUser,
         password:retsPassword,
         version:'RETS/1.7.2',
         userAgent:'RETS node-client/1.0'
-    });
+    };
 ...
 ```    
-##### Client configuration with UA Authorization
+##### Client Configuration with UA Authorization
 ```javascript
     //create rets-client
-    var client = require('rets-client').getClientFromSettings({
+    var clientSettings = {
         version:'RETS/1.7.2',
         userAgent:userAgent,
         userAgentPassword:userAgentPassword,
         sessionId:sessionId
-    });
+    };
 ...
-```   
-##### Get Resources Metadata
+```
 
+#### Example RETS Session
 ```javascript
+  var rets = require('rets-client');
+  var fs = require('fs');
+  var photoId = '12345'; // <--- dummy example ID!
+  var outputFields = function(obj, fields) {
+    for (var i=0; i<fields.length; i++) {
+      console.log(fields[i]+": "+obj[fields[i]]);
+    }
+    console.log("");
+  };
+  // establish connection to RETS server which auto-logs out when we're done
+  rets.getAutoLogoutClient(clientSettings, function (client) {
     //get resources metadata
-    var client = require('rets-client').getClient(retsLoginUrl, retsUser, retsPassword);
-
-    client.once('connection.success', function() {
-        client.getResources();
-
-        client.once('metadata.resources.success', function(data) {
-            console.log(data.Version);
-            console.log(data.Date);
-            for(var dataItem = 0; dataItem < data.Resources.length; dataItem++) {
-                console.log(data.Resources[dataItem].ResourceID);
-                console.log(data.Resources[dataItem].StandardName);
-                console.log(data.Resources[dataItem].VisibleName);
-                console.log(data.Resources[dataItem].ObjectVersion);
-            }
+    return client.metadata.getResources()
+      .then(function (data) {
+        console.log("======================================");
+        console.log("========  Resources Metadata  ========");
+        console.log("======================================");
+        outputFields(data, ['Version', 'Date']);
+        for (var dataItem = 0; dataItem < data.results.length; dataItem++) {
+          console.log("-------- Resource " + dataItem + " --------");
+          outputFields(data.results[dataItem], ['ResourceID', 'StandardName', 'VisibleName', 'ObjectVersion']);
+        }
+      }).then(function () {
+        //get class metadata
+        return client.metadata.getClass("Property");
+      }).then(function (data) {
+        console.log("===========================================================");
+        console.log("========  Class Metadata (from Property Resource)  ========");
+        console.log("===========================================================");
+        outputFields(data, ['Version', 'Date', 'Resource']);
+        for (var classItem = 0; classItem < data.results.length; classItem++) {
+          console.log("-------- Table " + classItem + " --------");
+          outputFields(data.results[classItem], ['ClassName', 'StandardName', 'VisibleName', 'TableVersion']);
+        }
+      }).then(function () {
+        //get field data for open houses
+        return client.metadata.getTable("OpenHouse", "OPENHOUSE");
+      }).then(function (data) {
+        console.log("=============================================");
+        console.log("========  OpenHouse Table Metadata  ========");
+        console.log("=============================================");
+        outputFields(data, ['Version', 'Date', 'Resource', 'Class']);
+        for (var tableItem = 0; tableItem < data.results.length; tableItem++) {
+          console.log("-------- Field " + tableItem + " --------");
+          outputFields(data.results[tableItem], ['MetadataEntryID', 'SystemName', 'ShortName', 'LongName', 'DataType']);
+        }
+        return data.results
+      }).then(function (fieldsData) {
+        var plucked = [];
+        for (var fieldItem = 0; fieldItem < fieldsData.length; fieldItem++) {
+          plucked.push(fieldsData[fieldItem].SystemName);
+        }
+        return plucked;
+      }).then(function (fields) {
+        //perform a query using DQML2 -- pass resource, class, and query, and options
+        return client.search.query("OpenHouse", "OPENHOUSE", "(OpenHouseType=PUBLIC),(ActiveYN=1)", {limit:100, offset:1})
+        .then(function (searchData) {
+          console.log("===========================================");
+          console.log("========  OpenHouse Query Results  ========");
+          console.log("===========================================");
+          console.log("");
+          //iterate through search results
+          for (var dataItem = 0; dataItem < searchData.results.length; dataItem++) {
+            console.log("-------- Result " + dataItem + " --------");
+            outputFields(searchData.results[dataItem], fields);
+          }
+          if (searchData.maxRowsExceeded) {
+            console.log("-------- More rows available!");
+          }
         });
-    });
-
+      }).then(function () {
+        // get photos
+        return client.objects.getPhotos("Property", "LargePhoto", photoId)
+      }).then(function (photoList) {
+        console.log("=================================");
+        console.log("========  Photo Results  ========");
+        console.log("=================================");
+        for (var i = 0; i < photoList.length; i++) {
+          console.log("Photo " + (i + 1) + " MIME type: " + photoList[i].mime);
+          fs.writeFileSync(
+            "/tmp/photo" + (i + 1) + "." + photoList[i].mime.match(/\w+\/(\w+)/i)[1],
+            photoList[i].buffer
+          );
+        }
+      });
+  }).catch(function (error) {
+    console.log("ERROR: issue encountered: "+(error.stack||error));
+  });
 ```
-
-##### Get Class Metadata
-
-```javascript
-    //get class metadata
-    var client = require('rets-client').getClient(retsLoginUrl, retsUser, retsPassword);
-
-    client.once('connection.success', function() {
-        client.getClass("Property");
-
-        client.once('metadata.class.success', function(data) {
-            console.log(data.Version);
-            console.log(data.Date);
-            console.log(data.Resource);
-            for(var classItem = 0; classItem < data.Classes.length; classItem++) {
-                console.log(data.Classes[classItem].ClassName);
-                console.log(data.Classes[classItem].StandardName);
-                console.log(data.Classes[classItem].VisibleName);
-                console.log(data.Classes[classItem].TableVersion);
-            }
-        });
-    });
-```
-##### Get Field Metadata
-
-```javascript
-    //get field data
-    var client = require('rets-client').getClient(retsLoginUrl, retsUser, retsPassword);
-
-    client.once('connection.success', function() {
-        client.getTable("Property", "RESI");
-
-        client.once('metadata.table.success', function(data) {
-            console.log(data.Version);
-            console.log(data.Date);
-            console.log(data.Resource);
-            console.log(data.Class);
-
-            for(var tableItem = 0; tableItem < data.Fields.length; tableItem++) {
-                console.log(data.Fields[tableItem].MetadataEntryID);
-                console.log(data.Fields[tableItem].SystemName);
-                console.log(data.Fields[tableItem].ShortName);
-                console.log(data.Fields[tableItem].LongName);
-                console.log(data.Fields[tableItem].DataType);
-            }
-
-        });
-    });
-```
-
-##### Perform a Query
-
-```javascript
-    //perform a query using DQML
-    var client = require('rets-client').getClient(retsLoginUrl, retsUser, retsPassword);
-
-    client.once('connection.success', function() {
-
-        //get open house fields
-        client.getTable("OpenHouse", "OPENHOUSE");
-        var fields;
-
-        client.once('metadata.table.success', function(table) {
-
-            fields = table.Fields;
-
-            //pass resource, class, and DQML2 query
-            client.queryWithOpts("OpenHouse", "OPENHOUSE", 
-            "(OpenHouseType=PUBLIC),(ActiveYN=1)", {limit:100, offset:1}, function(error, data) {
-
-                if (error) {
-                    console.log(error);
-                    return;
-                }
-
-                //iterate through search results
-                for(var dataItem = 0; dataItem < data.length; dataItem++) {
-                    console.log("-------- Open House --------")
-
-                    for(var fieldItem = 0; fieldItem < fields.length; fieldItem++) {
-                        var systemStr = fields[fieldItem].SystemName;
-                        console.log(systemStr + " : " + data[dataItem][systemStr]);
-                    }
-
-                    console.log("\n");
-                }
-            });
-        });
-    });
-```
-##### Retrieve Large Photos of a Property
-
-```javascript
-    //get photos
-    var client = require('rets-client').getClient(retsLoginUrl, retsUser, retsPassword);
-
-    client.once('connection.success', function() {
-
-        client.getPhotos("Property", "LargePhoto", "123456789", function(error, dataList) {
-            if (error) {
-                console.log(error);
-                return;
-            }
-
-            for(var i = 0; i < dataList.length; i++) {
-                console.log("Photo " + (i+1) + " MIME type: " + dataList[i].mime);
-                
-                require('fs').writeFile(
-                    "imgs/photo"+(i+1)+"."+dataList[i].mime.match(/image\/(\w+)/i)[1], 
-                    dataList[i].buffer
-                );
-            }
-        });
-    });
-```
-
