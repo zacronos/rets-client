@@ -21,8 +21,7 @@ login = (retsSession, callback) ->
     .then (parsed) ->
       if !parsed || !parsed.RETS
         throw new Error('Unexpected results. Please check the RETS URL')
-      retsXml = parsed.RETS['RETS-RESPONSE']
-      keyVals = retsXml[0].split('\ud\n')
+      keyVals = parsed.RETS['RETS-RESPONSE'][0].split('\r\n')
       systemData = {}
       for keyVal in keyVals
         split = keyVal.split('=')
