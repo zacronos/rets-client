@@ -6,16 +6,16 @@ logger = require('winston')
 Promise = require('bluebird')
 xmlParser = Promise.promisify(require('xml2js').parseString)
 
-utils = require('./utils.js')
+utils = require('./utils')
 
 
 ###
 # Executes RETS login routine.
 ###
 
-login = (retsSession, callback) ->
+login = (retsSession) ->
   logger.debug 'RETS method login'
-  utils.callRetsMethod('login', retsSession, {})
+  utils.callRetsMethod('login', Promise.promisify(retsSession), {})
   .then (result) ->
     xmlParser(result.body)
     .then (parsed) ->
@@ -36,9 +36,9 @@ login = (retsSession, callback) ->
 # Logouts RETS user
 ###
 
-logout = (retsSession, callback) ->
+logout = (retsSession) ->
   logger.debug 'RETS method logout'
-  utils.callRetsMethod('logout', retsSession, {})
+  utils.callRetsMethod('logout', Promise.promisify(retsSession), {})
   .then (result) ->
     logger.debug 'Logout success'
 

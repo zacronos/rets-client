@@ -4,6 +4,7 @@
 
 logger = require('winston')
 streamBuffers = require('stream-buffers')
+Promise = require('bluebird')
 
 multipart = require('./multipart')
 
@@ -78,6 +79,6 @@ getPhotos = (resourceType, photoType, matrixId) ->
 module.exports = (_retsSession) ->
   if !_retsSession
     throw new Error('System data not set; invoke login().')
-  retsSession: _retsSession
+  retsSession: Promise.promisify(_retsSession)
   getObject: getObject
   getPhotos: getPhotos

@@ -55,7 +55,8 @@ getValidUrl = (targetUrl, fullUrl) ->
 
 
 callRetsMethod = (methodName, retsSession, queryOptions) ->
-  retsSession(qs: queryOptions)
+  Promise.try () ->
+    retsSession(qs: queryOptions)
   .catch (error) ->
     logger.debug "RETS #{methodName} error:\n" + JSON.stringify(error)
     Promise.reject(error)
@@ -82,7 +83,7 @@ parseCompact = (rawXml, subtag) -> Promise.try () ->
       resultBase = parsedXml.RETS[subtag]?[0]
       if !resultBase
         throw new Error("Failed to parse #{subtag} XML: #{resultBase}")
-      delimiter = '\u9'
+      delimiter = '\t'
       result.info = resultBase.$
       result.type = subtag
     else

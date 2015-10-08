@@ -9,7 +9,7 @@ xmlParser = Promise.promisify(require('xml2js').parseString)
 utils = require('./utils')
 
 
-_getParsedMetadataFactory = (type, format='COMPACT') ->
+_getParsedMetadataFactory = (retsSession, type, format='COMPACT') ->
   (id) -> Promise.try () ->
     if !id
       throw new Error('Resource type id is required (or for some types of metadata, "0" retrieves for all resource types)')
@@ -18,19 +18,19 @@ _getParsedMetadataFactory = (type, format='COMPACT') ->
       Id: id
       Format: format
     logger.debug('RETS getMetadata', options)
-    utils.callRetsMethod('getMetadata', @retsSession, options)
+    utils.callRetsMethod('getMetadata', retsSession, options)
     .then (result) ->
       utils.parseCompact(result.body, type)
 
 
-_getParsedAllMetadataFactory = (type, format='COMPACT') ->
+_getParsedAllMetadataFactory = (retsSession, type, format='COMPACT') ->
   options =
     Type: type
     Id: '0'
     Format: format
   () -> Promise.try () ->
     logger.debug('RETS getMetadata', options)
-    utils.callRetsMethod('getMetadata', @retsSession, options)
+    utils.callRetsMethod('getMetadata', retsSession, options)
     .then (result) ->
       utils.parseCompact(result.body, type)
 
@@ -43,7 +43,7 @@ _getParsedAllMetadataFactory = (type, format='COMPACT') ->
 # @param format Data format (i.e. COMPACT, COMPACT-DECODED), defaults to 'COMPACT'
 ###
 
-getMetadata = (type, id, format='COMPACT') -> Promise.try () ->
+getMetadata = (type, id, format='COMPACT') -> Promise.try () =>
   logger.debug('RETS getMetadata', type, id, format)
   if !type
     throw new Error('Metadata type is required')
@@ -77,20 +77,21 @@ getSystem = () ->
 
 
 module.exports = (_retsSession) ->
+  _retsSession = Promise.promisify(_retsSession)
   if !_retsSession
     throw new Error('System data not set; invoke login().')
   retsSession: _retsSession
   getMetadata: getMetadata
   getSystem: getSystem
-  getResources: _getParsedMetadataFactory('METADATA-RESOURCE')
-  getAllForeignKeys: _getParsedAllMetadataFactory('METADATA-FOREIGNKEYS')
-  getForeignKeys: _getParsedMetadataFactory('METADATA-FOREIGNKEYS')
-  getAllClass: _getParsedAllMetadataFactory('METADATA-CLASS')
-  getClass: _getParsedMetadataFactory('METADATA-CLASS')
-  getAllTable: _getParsedAllMetadataFactory('METADATA-TABLE')
-  getTable: _getParsedMetadataFactory('METADATA-TABLE')
-  getAllLookups: _getParsedAllMetadataFactory('METADATA-LOOKUP')
-  getLookups: _getParsedMetadataFactory('METADATA-LOOKUP')
-  getAllLookupTypes: _getParsedAllMetadataFactory('METADATA-LOOKUP_TYPE')
-  getLookupTypes: _getParsedMetadataFactory('METADATA-LOOKUP_TYPE')
-  getObject: _getParsedMetadataFactory('METADATA-OBJECT')
+  getResources:       _getParsedMetadataFactory(_retsSession, 'METADATA-RESOURCE')
+  getAllForeignKeys:  _getParsedAllMetadataFactory(_retsSession, 'METADATA-FOREIGNKEYS')
+  getForeignKeys:     _getParsedMetadataFactory(_retsSession, 'METADATA-FOREIGNKEYS')
+  getAllClass:        _getParsedAllMetadataFactory(_retsSession, 'METADATA-CLASS')
+  getClass:           _getParsedMetadataFactory(_retsSession, 'METADATA-CLASS')
+  getAllTable:        _getParsedAllMetadataFactory(_retsSession, 'METADATA-TABLE')
+  getTable:           _getParsedMetadataFactory(_retsSession, 'METADATA-TABLE')
+  getAllLookups:      _getParsedAllMetadataFactory(_retsSession, 'METADATA-LOOKUP')
+  getLookups:         _getParsedMetadataFactory(_retsSession, 'METADATA-LOOKUP')
+  getAllLookupTypes:  _getParsedAllMetadataFactory(_retsSession, 'METADATA-LOOKUP_TYPE')
+  getLookupTypes:     _getParsedMetadataFactory(_retsSession, 'METADATA-LOOKUP_TYPE')
+  getObject:          _getParsedMetadataFactory(_retsSession, 'METADATA-OBJECT')

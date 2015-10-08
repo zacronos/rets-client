@@ -4,7 +4,6 @@
 
 logger = require('winston')
 Promise = require('bluebird')
-xmlParser = Promise.promisify(require('xml2js').parseString)
 
 utils = require('./utils')
 
@@ -45,7 +44,7 @@ queryOptionsDefaults =
 #       limit:"NONE"
 ###
 
-searchRets = (queryOptions) -> Promise.try () ->
+searchRets = (queryOptions) -> Promise.try () =>
   logger.debug 'RETS method search'
   if !queryOptions
     throw new Error('queryOptions is required.')
@@ -82,7 +81,7 @@ searchRets = (queryOptions) -> Promise.try () ->
 #       Please note that queryType and format are immutable.
 ###
 
-query = (resourceType, classType, queryString, options) -> Promise.try () ->
+query = (resourceType, classType, queryString, options) -> Promise.try () =>
   baseOpts =
     searchType: resourceType
     class: classType
