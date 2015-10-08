@@ -3,7 +3,10 @@ rets-client
 A RETS (Real Estate Transaction Standard) client for Node.js.
 
 Version 2.x of rets-client has a completely different interface from the 1.x version -- code written for 1.x will not
-work with 2.x.  This interface uses promises, and future development plans include an optional stream-based interface
+work with 2.x.  If you wish to continue to use the 1.x version, you can use the
+[v1 branch](https://github.com/sbruno81/rets-client/tree/v1).
+
+This interface uses promises, and future development plans include an optional stream-based interface
 for better performance with large datasets and/or large objects.
 
 This library is written primarily in CoffeeScript, but may be used just as easily in a Node app using Javascript or
