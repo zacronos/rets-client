@@ -6,6 +6,7 @@
 # Search codes that are covered:
 # Search Transaction Reply Codes
 tagCodeMap =
+  OPERATION_SUCCESSFUL: 0
   UNKNOWN_QUERY_FIELD: 20200
   NO_RECORDS_FOUND: 20201
   INVALID_SELECT: 20202
@@ -28,5 +29,6 @@ codeTagMap = {};
 for k, v of tagCodeMap
   codeTagMap[v] = k
 
-module.exports.codeMap = tagCodeMap
-module.exports.tagMap = codeTagMap
+module.exports =
+  codeMap: tagCodeMap
+  tagMap: codeTagMap

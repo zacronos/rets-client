@@ -21,7 +21,6 @@ backward-compatible PRs will be accepted.
 
 #### TODO
 - create optional streaming interface 
-- update dependency versions
 - create unit tests -- specifically ones that run off example RETS data rather than requiring access to a real RETS server
 
 
@@ -51,7 +50,7 @@ backward-compatible PRs will be accepted.
 ...
 ```
 
-#### RETS Session
+#### Example RETS Session
 ```javascript
   var rets = require('rets-client');
   var fs = require('fs');
@@ -71,9 +70,9 @@ backward-compatible PRs will be accepted.
         console.log("========  Resources Metadata  ========");
         console.log("======================================");
         outputFields(data, ['Version', 'Date']);
-        for (var dataItem = 0; dataItem < data.Resources.length; dataItem++) {
+        for (var dataItem = 0; dataItem < data.results.length; dataItem++) {
           console.log("-------- Resource " + dataItem + " --------");
-          outputFields(data.Resources[dataItem], ['ResourceID', 'StandardName', 'VisibleName', 'ObjectVersion']);
+          outputFields(data.results[dataItem], ['ResourceID', 'StandardName', 'VisibleName', 'ObjectVersion']);
         }
       }).then(function () {
         //get class metadata
@@ -83,9 +82,9 @@ backward-compatible PRs will be accepted.
         console.log("========  Class Metadata (from Property Resource)  ========");
         console.log("===========================================================");
         outputFields(data, ['Version', 'Date', 'Resource']);
-        for (var classItem = 0; classItem < data.Classes.length; classItem++) {
+        for (var classItem = 0; classItem < data.results.length; classItem++) {
           console.log("-------- Table " + classItem + " --------");
-          outputFields(data.Classes[classItem], ['ClassName', 'StandardName', 'VisibleName', 'TableVersion']);
+          outputFields(data.results[classItem], ['ClassName', 'StandardName', 'VisibleName', 'TableVersion']);
         }
       }).then(function () {
         //get field data for open houses
@@ -95,11 +94,11 @@ backward-compatible PRs will be accepted.
         console.log("========  OpenHouse Table Metadata  ========");
         console.log("=============================================");
         outputFields(data, ['Version', 'Date', 'Resource', 'Class']);
-        for (var tableItem = 0; tableItem < data.Fields.length; tableItem++) {
+        for (var tableItem = 0; tableItem < data.results.length; tableItem++) {
           console.log("-------- Field " + tableItem + " --------");
-          outputFields(data.Fields[tableItem], ['MetadataEntryID', 'SystemName', 'ShortName', 'LongName', 'DataType']);
+          outputFields(data.results[tableItem], ['MetadataEntryID', 'SystemName', 'ShortName', 'LongName', 'DataType']);
         }
-        return data.Fields
+        return data.results
       }).then(function (fieldsData) {
         var plucked = [];
         for (var fieldItem = 0; fieldItem < fieldsData.length; fieldItem++) {
@@ -109,15 +108,18 @@ backward-compatible PRs will be accepted.
       }).then(function (fields) {
         //perform a query using DQML2 -- pass resource, class, and query, and options
         return client.search.query("OpenHouse", "OPENHOUSE", "(OpenHouseType=PUBLIC),(ActiveYN=1)", {limit:100, offset:1})
-        .then(function (results) {
+        .then(function (searchData) {
           console.log("===========================================");
           console.log("========  OpenHouse Query Results  ========");
           console.log("===========================================");
           console.log("");
           //iterate through search results
-          for (var dataItem = 0; dataItem < results.length; dataItem++) {
+          for (var dataItem = 0; dataItem < searchData.results.length; dataItem++) {
             console.log("-------- Result " + dataItem + " --------");
-            outputFields(results[dataItem], fields);
+            outputFields(searchData.results[dataItem], fields);
+          }
+          if (searchData.maxRowsExceeded) {
+            console.log("-------- More rows available!");
           }
         });
       }).then(function () {

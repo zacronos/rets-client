@@ -3,11 +3,11 @@ crypto = require('crypto')
 request = require('request')
 Promise = require('bluebird')
 
-auth = require('./auth.js')
-metadata = require('./metadata.js')
-search = require('./search.js')
-object = require('./object.js')
-appUtils = require('./utils.js')
+auth = require('./auth')
+metadata = require('./metadata')
+search = require('./search')
+object = require('./object')
+appUtils = require('./utils')
 
 URL_KEYS =
   GET_METADATA: "GetMetadata"
@@ -17,16 +17,6 @@ URL_KEYS =
   ACTION: "Action"
   LOGIN: "Login"
   LOGOUT: "Logout"
-
-OTHER_KEYS =
-  MEMBER_NAME: "MemberName"
-  USER: "User"
-  BROKER: "Broker"
-  METADATA_VERSION: "MetadataVersion"
-  METADATA_TIMESTAMP: "MetadataTimestamp"
-  MIN_METADATA_TIMESTAMP: "MinMetadataTimestamp"
-  RETS_VERSION: "retsVersion"
-  RETS_SERVER: "retsServer"
 
 
 class Client
@@ -64,45 +54,23 @@ class Client
   login: () ->
     options =
       uri: @settings.loginUrl
-    Promise.fromNode (callback) =>
-      auth.login @baseRetsSession.defaults(options), callback
+    auth.login(@baseRetsSession.defaults(options))
     .then (systemData) =>
       @systemData = systemData
       @urls = {}
       for key,val of URL_KEYS
         if @systemData[val]
           @urls[val] = appUtils.getValidUrl(@systemData[val], @settings.loginUrl)
-      @retsVersion = @systemData[OTHER_KEYS.RETS_VERSION]
-      @retsServer = @systemData[OTHER_KEYS.RETS_SERVER]
-      @memberName = @systemData[OTHER_KEYS.MEMBER_NAME]
-      @user = @systemData[OTHER_KEYS.USER]
-      @broker = @systemData[OTHER_KEYS.BROKER]
-      @metadataVersion = @systemData[OTHER_KEYS.METADATA_VERSION]
-      @metadataTimestamp = @systemData[OTHER_KEYS.METADATA_TIMESTAMP]
-      @minMetadataTimestamp = @systemData[OTHER_KEYS.MIN_METADATA_TIMESTAMP]
 
-      metadataModule = metadata @baseRetsSession.defaults uri: @urls[URL_KEYS.GET_METADATA]
-      @metadata = {}
-      for own method of metadataModule
-        @metadata[method] = Promise.promisify metadataModule[method], metadataModule
-
-      searchModule = search @baseRetsSession.defaults uri: @urls[URL_KEYS.SEARCH]
-      @search = {}
-      for own method of searchModule
-        @search[method] = Promise.promisify searchModule[method], searchModule
-
-      objectsModule = object @baseRetsSession.defaults uri: @urls[URL_KEYS.GET_OBJECT]
-      @objects = {}
-      for own method of objectsModule
-        @objects[method] = Promise.promisify objectsModule[method], objectsModule
-
+      @metadata = metadata(@baseRetsSession.defaults(uri: @urls[URL_KEYS.GET_METADATA]))
+      @search = search(@baseRetsSession.defaults(uri: @urls[URL_KEYS.SEARCH]))
+      @objects = object(@baseRetsSession.defaults(uri: @urls[URL_KEYS.GET_OBJECT]))
       @logoutRequest = @baseRetsSession.defaults uri: @urls[URL_KEYS.LOGOUT]
 
       return @
 
   # Logs the user out of the current session
   logout: () ->
-    Promise.fromNode (callback) =>
-      auth.logout(@logoutRequest, callback)
+    auth.logout(@logoutRequest)
 
 module.exports = Client
