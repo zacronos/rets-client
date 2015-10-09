@@ -10,20 +10,20 @@ xmlParser = Promise.promisify(require('xml2js').parseString)
 replycodes = require('./replycodes')
 
 
+class RetsReplyError extends Error
+  constructor: (@replyCode, @replyText) ->
+    @name = 'RetsReplyError'
+    @replyTag = if replycodes.tagMap[@replyCode]? then replycodes.tagMap[@replyCode] else 'unknown reply code'
+    @message = "RETS Server returned an error - ReplyCode #{@replyCode} (#{@replyTag}); ReplyText: #{@replyText}"
+    Error.captureStackTrace(this, RetsReplyError)
+
+
 replyCodeCheck = (result) -> Promise.try () ->
-  replyCode = result.RETS.$.ReplyCode
   # I suspect we'll want to allow 20208 replies through as well, but I'll wait to handle that until I can see
   # it in action myself or get info (or a PR) from someone else who can 
-  if replyCode == '0'
+  if result.RETS.$.ReplyCode == '0'
     return result
-    
-  replyText = result.RETS.$.ReplyText
-  replyTag = if replycodes.tagMap[replyCode]? then ' (' + replycodes.tagMap[replyCode] + ')' else ''
-  error = new Error('RETS Server returned an error - ReplyCode ' + replyCode + replyTag + '; ReplyText: ' + replyText)
-  error.replyCode = replyCode
-  error.replyText = replyText
-  error.replyTag = replyTag
-  throw error
+  throw new RetsReplyError(result.RETS.$.ReplyCode, result.RETS.$.ReplyText)
 
   
 hex2a = (hexx) ->
@@ -123,3 +123,4 @@ module.exports =
   croppedSlice: croppedSlice
   callRetsMethod: callRetsMethod
   parseCompact: parseCompact
+  RetsReplyError: RetsReplyError
