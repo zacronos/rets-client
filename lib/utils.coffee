@@ -19,7 +19,7 @@ replyCodeCheck = (result) -> Promise.try () ->
     
   replyText = result.RETS.$.ReplyText
   replyTag = if replycodes.tagMap[replyCode]? then ' (' + replycodes.tagMap[replyCode] + ')' else ''
-  error = new Error('RETS Server returned an error - ReplyCode ' + replyCode + replyTag + ': '  + ', ReplyText: ' + replyText)
+  error = new Error('RETS Server returned an error - ReplyCode ' + replyCode + replyTag + '; ReplyText: ' + replyText)
   error.replyCode = replyCode
   error.replyText = replyText
   error.replyTag = replyTag
