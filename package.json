@@ -1,6 +1,6 @@
 {
   "name": "rets-client",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "A RETS client (Real Estate Transaction Standard).",
   "main": "index.js",
   "dependencies": {
