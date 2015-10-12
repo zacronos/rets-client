@@ -131,3 +131,4 @@ module.exports =
   callRetsMethod: callRetsMethod
   parseCompact: parseCompact
   RetsReplyError: RetsReplyError
+  RetsServerError: RetsServerError
