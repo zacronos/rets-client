@@ -14,8 +14,15 @@ class RetsReplyError extends Error
   constructor: (@replyCode, @replyText) ->
     @name = 'RetsReplyError'
     @replyTag = if replycodes.tagMap[@replyCode]? then replycodes.tagMap[@replyCode] else 'unknown reply code'
-    @message = "RETS Server returned an error - ReplyCode #{@replyCode} (#{@replyTag}); ReplyText: #{@replyText}"
+    @message = "RETS Server replied with an error code - ReplyCode #{@replyCode} (#{@replyTag}); ReplyText: #{@replyText}"
     Error.captureStackTrace(this, RetsReplyError)
+
+
+class RetsServerError extends Error
+  constructor: (@retsMethod, @httpStatus) ->
+    @name = 'RetsServerError'
+    @message = "Error while attempting #{@retsMethod} - HTTP Status #{@httpStatus} returned"
+    Error.captureStackTrace(this, RetsServerError)
 
 
 replyCodeCheck = (result) -> Promise.try () ->
@@ -62,7 +69,7 @@ callRetsMethod = (methodName, retsSession, queryOptions) ->
     Promise.reject(error)
   .spread (response, body) ->
     if response.statusCode != 200
-      error = new Error("RETS #{methodName} returned unexpected status code: " + response.statusCode)
+      error = new RetsServerError(methodName, response.statusCode)
       logger.debug "RETS #{methodName} error:\n" + error.message
       return Promise.reject(error)
     response: response
