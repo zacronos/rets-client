@@ -20,6 +20,7 @@ var utils = require('./lib/utils');
 module.exports = {
   replycode: replycodes.codeMap,
   RetsReplyError: utils.RetsReplyError,
+  RetsServerError: utils.RetsServerError,
   Client: Client,
   getAutoLogoutClient: function(settings, handler) {
     var client = new Client(settings);
