@@ -28,9 +28,8 @@ class RetsServerError extends Error
 replyCodeCheck = (result) -> Promise.try () ->
   # I suspect we'll want to allow 20208 replies through as well, but I'll wait to handle that until I can see
   # it in action myself or get info (or a PR) from someone else who can 
-  if result.RETS.$.ReplyCode == '0'
-    return result
-  throw new RetsReplyError(result.RETS.$.ReplyCode, result.RETS.$.ReplyText)
+  if result.RETS.$.ReplyCode != '0'
+    throw new RetsReplyError(result.RETS.$.ReplyCode, result.RETS.$.ReplyText)
 
   
 hex2a = (hexx) ->
@@ -76,58 +75,63 @@ callRetsMethod = (methodName, retsSession, queryOptions) ->
     body: body
 
 
-croppedSlice = (data, delimiter) ->
-  crop = delimiter.length
-  data.slice(crop, -crop).split(delimiter)
-
-
-parseCompact = (rawXml, subtag) -> Promise.try () ->
+parseCompact = (rawXml, subtag, columnTransform) ->
   xmlParser(rawXml)
-  .then replyCodeCheck
   .then (parsedXml) ->
-    result = {}
-    if subtag
-      resultBase = parsedXml.RETS[subtag]?[0]
-      if !resultBase
-        throw new Error("Failed to parse #{subtag} XML: #{resultBase}")
-      delimiter = '\t'
-      result.info = resultBase.$
-      result.type = subtag
-    else
-      resultBase = parsedXml.RETS
-      delimiter = hex2a(parsedXml.RETS.DELIMITER?[0]?.$?.value)
-      if !delimiter
-        throw new Error('No specified delimiter.')
-      result.count = parsedXml.RETS.COUNT?[0]?.$?.Records
-      result.maxRowsExceeded = parsedXml.RETS.MAXROWS?
-    
-    rawColumns = resultBase.COLUMNS?[0]
-    if !rawColumns
-      throw new Error("Failed to parse columns XML: #{resultBase.COLUMNS}")
-    rawData = resultBase.DATA
-    if !rawData?.length
-      throw new Error("Failed to parse data XML: #{rawData}")
-    
-    columns = croppedSlice(rawColumns, delimiter)
-    results = []
-    for row in rawData
-      data = croppedSlice(row, delimiter)
-      model = {}
-      for column,i in columns
-        model[column] = data[i]
-      results.push model
-    result.results = results
-    result.replyCode = parsedXml.RETS.$.ReplyCode
-    result.replyTag = replycodes.tagMap[parsedXml.RETS.$.ReplyCode]
-    result.replyText = parsedXml.RETS.$.ReplyText
-    result
+    replyCodeCheck(parsedXml)
+    .then () ->
+      result = {}
+      if subtag
+        resultBase = parsedXml.RETS[subtag]?[0]
+        if !resultBase
+          throw new Error("Failed to parse #{subtag} XML: #{resultBase}")
+        delimiter = '\t'
+        result.info = resultBase.$
+        result.type = subtag
+      else
+        resultBase = parsedXml.RETS
+        delimiter = hex2a(parsedXml.RETS.DELIMITER?[0]?.$?.value)
+        if !delimiter
+          throw new Error('No specified delimiter.')
+        result.count = parsedXml.RETS.COUNT?[0]?.$?.Records
+        result.maxRowsExceeded = parsedXml.RETS.MAXROWS?
+      
+      rawColumns = resultBase.COLUMNS?[0]
+      if !rawColumns
+        throw new Error("Failed to parse columns XML: #{resultBase.COLUMNS}")
+      rawData = resultBase.DATA
+      if !rawData?.length
+        throw new Error("Failed to parse data XML: #{rawData}")
+      
+      columns = rawColumns.split(delimiter)
+      if columnTransform
+        i=1
+        while i < columns.length-1
+          if typeof columnTransform == 'function'
+            columns[i] = columnTransform[columns[i]] || columns[i]
+          else
+            columns[i] = columnTransform(columns[i]) || columns[i]
+          i++
+      results = []
+      for row in rawData
+        data = row.split(delimiter)
+        model = {}
+        i=1
+        while i < columns.length-1
+          model[columns[i]] = data[i]
+          i++
+        results.push model
+      result.results = results
+      result.replyCode = parsedXml.RETS.$.ReplyCode
+      result.replyTag = replycodes.tagMap[parsedXml.RETS.$.ReplyCode]
+      result.replyText = parsedXml.RETS.$.ReplyText
+      result
 
 
 module.exports = 
   replyCodeCheck: replyCodeCheck
   hex2a: hex2a
   getValidUrl: getValidUrl
-  croppedSlice: croppedSlice
   callRetsMethod: callRetsMethod
   parseCompact: parseCompact
   RetsReplyError: RetsReplyError

@@ -66,7 +66,7 @@ searchRets = (queryOptions) -> Promise.try () =>
 # @param searchType Rets resource type (ex: Property)
 # @param classType Rets class type (ex: RESI)
 # @param query Rets query string. See RETS specification - (ex: MatrixModifiedDT=2014-01-01T00:00:00.000+)
-# @param _options Search query options (optional).
+# @param options Search query options (optional).
 #    See RETS specification for query options.
 #
 #    Default values query params:
@@ -87,11 +87,16 @@ query = (resourceType, classType, queryString, options) -> Promise.try () =>
     class: classType
     query: queryString
   finalQueryOptions = setDefaults(baseOpts, options)
+  
+  columnTransform = finalQueryOptions.columnTransform
+  delete finalQueryOptions.columnTransform
+  
   # make sure queryType and format will use the searchRets defaults
   delete finalQueryOptions.queryType
   delete finalQueryOptions.format
   @searchRets(finalQueryOptions)
-  .then utils.parseCompact
+  .then (results) ->
+    utils.parseCompact(results, null, columnTransform)
 
 
 module.exports = (_retsSession) ->

@@ -65,15 +65,16 @@ getMetadata = (type, id, format='COMPACT') -> Promise.try () =>
 getSystem = () ->
   @getMetadata('METADATA-SYSTEM')
   .then xmlParser
-  .then utils.replyCodeCheck
   .then (parsedXml) ->
-    systemData = result.RETS['METADATA-SYSTEM']?[0]
-    if !systemData
-      throw new Error("Failed to parse system XML: #{systemData}")
-    metadataVersion: systemData.$.Version
-    metadataDate: systemData.$.Date
-    systemId: systemData.SYSTEM[0].$.SystemID
-    systemDescription: systemData.SYSTEM[0].$.SystemDescription
+    replyCodeCheck(parsedXml)
+    .then () ->
+      systemData = parsedXml.RETS['METADATA-SYSTEM']?[0]
+      if !systemData
+        throw new Error("Failed to parse system XML: #{systemData}")
+      metadataVersion: systemData.$.Version
+      metadataDate: systemData.$.Date
+      systemId: systemData.SYSTEM[0].$.SystemID
+      systemDescription: systemData.SYSTEM[0].$.SystemDescription
 
 
 module.exports = (_retsSession) ->
