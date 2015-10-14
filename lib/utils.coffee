@@ -19,9 +19,9 @@ class RetsReplyError extends Error
 
 
 class RetsServerError extends Error
-  constructor: (@retsMethod, @httpStatus) ->
+  constructor: (@retsMethod, @httpStatus, @httpStatusMessage) ->
     @name = 'RetsServerError'
-    @message = "Error while attempting #{@retsMethod} - HTTP Status #{@httpStatus} returned"
+    @message = "Error while attempting #{@retsMethod} - HTTP Status #{@httpStatus} returned (#{httpStatusMessage})"
     Error.captureStackTrace(this, RetsServerError)
 
 
@@ -68,7 +68,7 @@ callRetsMethod = (methodName, retsSession, queryOptions) ->
     Promise.reject(error)
   .spread (response, body) ->
     if response.statusCode != 200
-      error = new RetsServerError(methodName, response.statusCode)
+      error = new RetsServerError(methodName, response.statusCode, response.statusMessage)
       logger.debug "RETS #{methodName} error:\n" + error.message
       return Promise.reject(error)
     response: response
