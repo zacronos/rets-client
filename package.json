@@ -8,11 +8,11 @@
     "coffee-script": "^1.8.0",
     "crypto": "0.0.3",
     "formidable": "~1.0.15",
+    "node-expat": "^2.3.10",
     "request": "^2.55.0",
     "stream-buffers": "~0.2.5",
     "tough-cookie": "^0.13.0",
-    "winston": "~0.7.3",
-    "xml2js": "~0.4.4"
+    "winston": "~0.7.3"
   },
   "directories": {
     "lib": "./lib"
@@ -37,7 +37,7 @@
     "Steve Bruno <stevenrbruno@icloud.com>",
     "Joe Ibershoff <joe@realtymaps.com>"
   ],
-  "license": "The MIT License (MIT)",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/sbruno81/rets-client/issues"
   }

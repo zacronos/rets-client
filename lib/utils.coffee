@@ -5,7 +5,7 @@
 urlUtil = require('url')
 Promise = require('bluebird')
 logger = require('winston')
-xmlParser = Promise.promisify(require('xml2js').parseString)
+expat = require('node-expat')
 
 replycodes = require('./replycodes')
 
@@ -21,17 +21,44 @@ class RetsReplyError extends Error
 class RetsServerError extends Error
   constructor: (@retsMethod, @httpStatus, @httpStatusMessage) ->
     @name = 'RetsServerError'
-    @message = "Error while attempting #{@retsMethod} - HTTP Status #{@httpStatus} returned (#{httpStatusMessage})"
+    @message = "Error while attempting #{@retsMethod} - HTTP Status #{@httpStatus} returned (#{@httpStatusMessage})"
     Error.captureStackTrace(this, RetsServerError)
 
 
-replyCodeCheck = (result) -> Promise.try () ->
-  # I suspect we'll want to allow 20208 replies through as well, but I'll wait to handle that until I can see
-  # it in action myself or get info (or a PR) from someone else who can 
-  if result.RETS.$.ReplyCode != '0'
-    throw new RetsReplyError(result.RETS.$.ReplyCode, result.RETS.$.ReplyText)
+# Parsing as performed here and in the other modules of this project relies on some simplifying assumptions.  DO NOT
+# COPY OR MODIFY THIS LOGIC BLINDLY!  It works correctly for well-formed XML which adheres to the RETS specifications,
+# and does not attempt to check for or properly handle XML not of that form.  In particular, it does not keep track of
+# the element stack to ensure elements (and text) are found only in the expected locations.
+getBaseObjectParser = (errCallback) ->
+  result =
+    currElementName: null
+    parser: new expat.Parser('UTF-8')
+    finish: () ->
+      result.parser.stop()
+      result.parser.removeAllListeners()
+    status: null
 
+  result.parser.once 'startElement', (name, attrs) ->
+    if name != 'RETS'
+      result.finish()
+      return errCallback(new Error('Unexpected results. Please check the RETS URL.'))
   
+  result.parser.on 'startElement', (name, attrs) ->
+    result.currElementName = name
+    if name != 'RETS' && name != 'RETS-STATUS'
+      return
+    result.status = attrs
+    if attrs.ReplyCode != '0' && attrs.ReplyCode != '20208'
+      result.finish()
+      return errCallback(new RetsReplyError(attrs.ReplyCode, attrs.ReplyText))
+
+  result.parser.on 'error', (err) ->
+    result.finish()
+    errCallback(new Error("XML parsing error: #{err}"))
+  
+  return result
+
+      
 hex2a = (hexx) ->
   if !hexx?
     return null
@@ -75,64 +102,10 @@ callRetsMethod = (methodName, retsSession, queryOptions) ->
     body: body
 
 
-parseCompact = (rawXml, subtag, columnTransform) ->
-  xmlParser(rawXml)
-  .then (parsedXml) ->
-    replyCodeCheck(parsedXml)
-    .then () ->
-      result = {}
-      if subtag
-        resultBase = parsedXml.RETS[subtag]?[0]
-        if !resultBase
-          throw new Error("Failed to parse #{subtag} XML: #{resultBase}")
-        delimiter = '\t'
-        result.info = resultBase.$
-        result.type = subtag
-      else
-        resultBase = parsedXml.RETS
-        delimiter = hex2a(parsedXml.RETS.DELIMITER?[0]?.$?.value)
-        if !delimiter
-          throw new Error('No specified delimiter.')
-        result.count = parsedXml.RETS.COUNT?[0]?.$?.Records
-        result.maxRowsExceeded = parsedXml.RETS.MAXROWS?
-      
-      rawColumns = resultBase.COLUMNS?[0]
-      if !rawColumns
-        throw new Error("Failed to parse columns XML: #{resultBase.COLUMNS}")
-      rawData = resultBase.DATA
-      if !rawData?.length
-        throw new Error("Failed to parse data XML: #{rawData}")
-      
-      columns = rawColumns.split(delimiter)
-      if columnTransform
-        i=1
-        while i < columns.length-1
-          if typeof columnTransform == 'function'
-            columns[i] = columnTransform[columns[i]] || columns[i]
-          else
-            columns[i] = columnTransform(columns[i]) || columns[i]
-          i++
-      results = []
-      for row in rawData
-        data = row.split(delimiter)
-        model = {}
-        i=1
-        while i < columns.length-1
-          model[columns[i]] = data[i]
-          i++
-        results.push model
-      result.results = results
-      result.replyCode = parsedXml.RETS.$.ReplyCode
-      result.replyTag = replycodes.tagMap[parsedXml.RETS.$.ReplyCode]
-      result.replyText = parsedXml.RETS.$.ReplyText
-      result
-
-
-module.exports = 
-  replyCodeCheck: replyCodeCheck
+module.exports =
+  RetsReplyError: RetsReplyError
+  RetsServerError: RetsServerError
+  getBaseObjectParser: getBaseObjectParser
   hex2a: hex2a
   getValidUrl: getValidUrl
   callRetsMethod: callRetsMethod
-  parseCompact: parseCompact
-  RetsReplyError: RetsReplyError
-  RetsServerError: RetsServerError

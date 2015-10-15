@@ -4,7 +4,6 @@
 
 logger = require('winston')
 Promise = require('bluebird')
-xmlParser = Promise.promisify(require('xml2js').parseString)
 
 utils = require('./utils')
 
@@ -16,21 +15,34 @@ utils = require('./utils')
 login = (retsSession) ->
   logger.debug 'RETS method login'
   utils.callRetsMethod('login', Promise.promisify(retsSession), {})
-  .then (result) ->
-    xmlParser(result.body)
-    .then (parsed) ->
-      if !parsed || !parsed.RETS
-        throw new Error('Unexpected results. Please check the RETS URL')
-      keyVals = parsed.RETS['RETS-RESPONSE'][0].split('\r\n')
-      systemData = {}
+  .then (retsResponse) -> new Promise (resolve, reject) ->
+    systemData =
+      retsVersion: retsResponse.response.headers['rets-version']
+      retsServer: retsResponse.response.headers.server
+    
+    retsParser = utils.getBaseObjectParser(reject)
+    
+    gotData = false
+    retsParser.parser.on 'text', (text) ->
+      if retsParser.currElementName != 'RETS-RESPONSE'
+        return
+      gotData = true
+      keyVals = text.split('\r\n')
       for keyVal in keyVals
         split = keyVal.split('=')
         if split.length > 1
           systemData[split[0]] = split[1]
-      systemData.retsVersion = result.response.headers['rets-version']
-      systemData.retsServer = result.response.headers.server
-      systemData
 
+    retsParser.parser.on 'endElement', (name) ->
+      if name != 'RETS'
+        return
+      retsParser.finish()
+      if !gotData
+        reject(new Error('Failed to parse data'))
+      else
+        resolve(systemData)
+
+    retsParser.parser.write(retsResponse.body)
 
 ###
 # Logouts RETS user
@@ -41,6 +53,7 @@ logout = (retsSession) ->
   utils.callRetsMethod('logout', Promise.promisify(retsSession), {})
   .then (result) ->
     logger.debug 'Logout success'
+    console.log(result.body)
 
 
 module.exports =

@@ -6,6 +6,7 @@ logger = require('winston')
 Promise = require('bluebird')
 
 utils = require('./utils')
+replycodes = require('./replycodes')
 
 
 setDefaults = (options, defaults) ->
@@ -34,7 +35,7 @@ queryOptionsDefaults =
 # @param _queryOptions Search query options.
 #    See RETS specification for query options.
 #
-#    Default values query params:
+#    Default values for query params:
 #
 #       queryType:'DMQL2',
 #       format:'COMPACT-DECODED',
@@ -69,7 +70,7 @@ searchRets = (queryOptions) -> Promise.try () =>
 # @param options Search query options (optional).
 #    See RETS specification for query options.
 #
-#    Default values query params:
+#    Default values for query params:
 #
 #       queryType:'DMQL2',
 #       format:'COMPACT-DECODED',
@@ -88,16 +89,75 @@ query = (resourceType, classType, queryString, options) -> Promise.try () =>
     query: queryString
   finalQueryOptions = setDefaults(baseOpts, options)
   
-  columnTransform = finalQueryOptions.columnTransform
-  delete finalQueryOptions.columnTransform
-  
   # make sure queryType and format will use the searchRets defaults
   delete finalQueryOptions.queryType
   delete finalQueryOptions.format
   @searchRets(finalQueryOptions)
-  .then (results) ->
-    utils.parseCompact(results, null, columnTransform)
+  .then parseXmlResponse
+  
 
+
+# for performance, sort switch options by frequency within expected XML
+parseXmlResponse = (rawXml) -> new Promise (resolve, reject) ->
+  result =
+    maxRowsExceeded: false
+    results: []
+  columnText = null
+  dataText = null
+  columns = null
+  delimiter = null
+  retsParser = utils.getBaseObjectParser(reject)
+
+  retsParser.parser.on 'startElement', (name, attrs) ->
+    switch name
+      when 'DATA'
+        dataText = ''
+      when 'COLUMNS'
+        columnText = ''
+      when 'COUNT'
+        result.count = attrs.Records
+      when 'MAXROWS'
+        result.maxRowsExceeded = true
+      when 'DELIMITER'
+        delimiter = utils.hex2a(attrs.value)
+
+  retsParser.parser.on 'text', (text) ->
+    switch retsParser.currElementName
+      when 'DATA'
+        dataText += text
+      when 'COLUMNS'
+        columnText += text
+
+  retsParser.parser.on 'endElement', (name) ->
+    switch name
+      when 'DATA'
+        if !columns
+          retsParser.finish()
+          return reject(new Error('Failed to parse columns'))
+        data = dataText.split(delimiter)
+        model = {}
+        i=1
+        while i < columns.length-1
+          model[columns[i]] = data[i]
+          i++
+        result.results.push(model)
+      when 'COLUMNS'
+        if !delimiter
+          retsParser.finish()
+          return reject(new Error('Failed to parse delimiter'))
+        columns = columnText.split(delimiter)
+      when 'RETS'
+        retsParser.finish()
+        if result.results.length == 0
+          reject(new Error('Failed to parse data'))
+        else
+          result.replyCode = retsParser.status.ReplyCode
+          result.replyTag = replycodes.tagMap[retsParser.status.ReplyCode]
+          result.replyText = retsParser.status.ReplyText
+          resolve(result)
+
+  retsParser.parser.write(rawXml)
+    
 
 module.exports = (_retsSession) ->
   if !_retsSession
