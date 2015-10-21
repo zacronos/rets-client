@@ -16,7 +16,7 @@ encountered, by returning an array of data sets rather than a single one.
 
 In addition to the methods available in 2.x, version 3.0 adds `client.search.stream.searchRets()`, which returns a
 text stream of the raw XML result, and `client.search.stream.query()`, which returns a stream of low-level objects
-parsed from the XML.  (See the [streaming example](#Simple-streaming-example) below.)  These streams, if used properly,
+parsed from the XML.  (See the [streaming example](#simple-streaming-example) below.)  These streams, if used properly,
 should result in a much lower memory footprint than their corresponding non-streaming counterparts.
 
 Version 3.x has almost the same interface as 2.x, which is completely different from 1.x.  If you wish to continue to
