@@ -6,7 +6,7 @@ logger = require('winston')
 streamBuffers = require('stream-buffers')
 Promise = require('bluebird')
 
-multipart = require('./multipart')
+multipart = require('../utils/multipart')
 
 
 ###
@@ -18,7 +18,6 @@ multipart = require('./multipart')
 ###
 
 getObject = (resourceType, objectType, objectId) ->
-  logger.debug 'RETS method getObject'
   if !resourceType
     throw new Error('Resource type id is required')
   if !objectType

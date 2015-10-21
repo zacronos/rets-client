@@ -1,0 +1,93 @@
+### jshint node:true ###
+### jshint -W097 ###
+'use strict'
+
+logger = require('winston')
+Promise = require('bluebird')
+through2 = require('through2')
+
+queryOptionHelpers = require('../utils/queryOptions')
+errors = require('../utils/errors')
+hex2a = require('../utils/hex2a')
+replyCodes = require('../utils/replyCodes')
+retsParsing = require('../utils/retsParsing')
+retsHttp = require('../utils/retsHttp')
+
+
+###
+# Invokes RETS search operation.
+#
+# @param _queryOptions Search query options.
+#    See RETS specification for query options.
+#
+#    Default values for query params:
+#
+#       queryType:'DMQL2',
+#       format:'COMPACT-DECODED',
+#       count:1,
+#       standardNames:0,
+#       restrictedIndicator:'***',
+#       limit:"NONE"
+###
+
+searchRets = (queryOptions) -> Promise.try () =>
+  finalQueryOptions = queryOptionHelpers.normalizeOptions(queryOptions)
+  retsHttp.callRetsMethod('search', @retsSession, finalQueryOptions)
+  .then (result) ->
+    result.body
+
+
+###
+#
+# Helper that performs a targeted RETS query and parses results.
+#
+# @param searchType Rets resource type (ex: Property)
+# @param classType Rets class type (ex: RESI)
+# @param query Rets query string. See RETS specification - (ex: MatrixModifiedDT=2014-01-01T00:00:00.000+)
+# @param options Search query options (optional).
+#    See RETS specification for query options.
+#
+#    Default values for query params:
+#
+#       queryType:'DMQL2',
+#       format:'COMPACT-DECODED',
+#       count:1,
+#       standardNames:0,
+#       restrictedIndicator:'***',
+#       limit:"NONE"
+#
+#       Please note that queryType and format are immutable.
+###
+
+query = (resourceType, classType, queryString, options={}) -> new Promise (resolve, reject) =>
+  result =
+    results: []
+    maxRowsExceeded: false
+  currEntry = null
+
+  @stream.query(resourceType, classType, queryString, options)
+  .pipe through2.obj (event, encoding, callback) ->
+    switch event.type
+      when 'data'
+        result.results.push(event.payload)
+      when 'status'
+        for own key, value of event.payload
+          result[key] = value
+      when 'count'
+        result.count = event.payload
+      when 'done'
+        for own key, value of event.payload
+          result[key] = value
+        resolve(result)
+      when 'error'
+        reject(event.payload)
+    callback()
+
+
+module.exports = (_retsSession) ->
+  if !_retsSession
+    throw new Error('System data not set; invoke login().')
+  retsSession: Promise.promisify(_retsSession)
+  searchRets: searchRets
+  query: query
+  stream: require('./search.stream')(_retsSession)

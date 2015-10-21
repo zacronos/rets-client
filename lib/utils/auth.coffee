@@ -5,7 +5,8 @@
 logger = require('winston')
 Promise = require('bluebird')
 
-utils = require('./utils')
+retsParsing = require('./retsParsing')
+retsHttp = require('./retsHttp')
 
 
 ###
@@ -13,14 +14,13 @@ utils = require('./utils')
 ###
 
 login = (retsSession) ->
-  logger.debug 'RETS method login'
-  utils.callRetsMethod('login', Promise.promisify(retsSession), {})
+  retsHttp.callRetsMethod('login', Promise.promisify(retsSession), {})
   .then (retsResponse) -> new Promise (resolve, reject) ->
     systemData =
       retsVersion: retsResponse.response.headers['rets-version']
       retsServer: retsResponse.response.headers.server
     
-    retsParser = utils.getBaseObjectParser(reject)
+    retsParser = retsParsing.getSimpleParser(reject)
     
     gotData = false
     retsParser.parser.on 'text', (text) ->
@@ -43,17 +43,17 @@ login = (retsSession) ->
         resolve(systemData)
 
     retsParser.parser.write(retsResponse.body)
+    retsParser.parser.end()
+
 
 ###
 # Logouts RETS user
 ###
 
 logout = (retsSession) ->
-  logger.debug 'RETS method logout'
-  utils.callRetsMethod('logout', Promise.promisify(retsSession), {})
+  retsHttp.callRetsMethod('logout', Promise.promisify(retsSession), {})
   .then (result) ->
     logger.debug 'Logout success'
-    console.log(result.body)
 
 
 module.exports =
