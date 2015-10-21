@@ -1,13 +1,18 @@
+### jshint node:true ###
+### jshint -W097 ###
+'use strict'
+
+
 # Tags & Constant representation for reply codes
- 
+
 # authoritative documentation for all reply codes in current rets standard:
 # http://www.reso.org/assets/RETS/Specifications/rets_1_8.pdf
 
 
 codeTagMap = {}
 
-# for readability, codes are presented in tag-code format, but we need to map them into code-tag format for use
-# using multiple calls to this helper because some tags are NOT globally unique
+# for readability, codes are presented in tag-code format, but we need to map them into code-tag format
+# using multiple calls to this helper because some tag names are NOT globally unique
 _registerCodes = (tagCodeMap) ->
   for k, v of tagCodeMap
     codeTagMap[v] = k
@@ -107,3 +112,4 @@ _registerCodes
 
 module.exports =
   tagMap: codeTagMap
+  getReplyTag: (code) -> codeTagMap[code]

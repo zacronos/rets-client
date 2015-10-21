@@ -8,7 +8,9 @@ Stream = require('stream').Stream
 StringDecoder = require('string_decoder').StringDecoder
 streamBuffers = require('stream-buffers')
 Promise = require('bluebird')
-#Multipart parser derived from formidable library. See https://github.com/felixge/node-formidable
+
+
+# Multipart parser derived from formidable library. See https://github.com/felixge/node-formidable
 
 
 parseMultipart = (buffer, _multipartBoundary) -> Promise.try () ->

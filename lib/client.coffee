@@ -1,13 +1,18 @@
+### jshint node:true ###
+### jshint -W097 ###
+'use strict'
 
 crypto = require('crypto')
 request = require('request')
 Promise = require('bluebird')
 
-auth = require('./auth')
-metadata = require('./metadata')
-search = require('./search')
-object = require('./object')
-appUtils = require('./utils')
+metadata = require('./clientModules/metadata')
+search = require('./clientModules/search')
+object = require('./clientModules/object')
+
+auth = require('./utils/auth')
+normalizeUrl = require('./utils/normalizeUrl')
+
 
 URL_KEYS =
   GET_METADATA: "GetMetadata"
@@ -60,7 +65,7 @@ class Client
       @urls = {}
       for key,val of URL_KEYS
         if @systemData[val]
-          @urls[val] = appUtils.getValidUrl(@systemData[val], @settings.loginUrl)
+          @urls[val] = normalizeUrl(@systemData[val], @settings.loginUrl)
 
       @metadata = metadata(@baseRetsSession.defaults(uri: @urls[URL_KEYS.GET_METADATA]))
       @search = search(@baseRetsSession.defaults(uri: @urls[URL_KEYS.SEARCH]))
@@ -72,5 +77,16 @@ class Client
   # Logs the user out of the current session
   logout: () ->
     auth.logout(@logoutRequest)
+
+
+Client.getAutoLogoutClient = (settings, handler) -> Promise.try () ->
+  client = new Client(settings)
+  client.login()
+  .then () ->
+    Promise.try () ->
+      handler(client)
+    .finally () ->
+      client.logout()
+
 
 module.exports = Client

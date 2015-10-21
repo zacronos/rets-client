@@ -1,6 +1,6 @@
 {
   "name": "rets-client",
-  "version": "2.0.7",
+  "version": "3.0.0",
   "description": "A RETS client (Real Estate Transaction Standard).",
   "main": "index.js",
   "dependencies": {
@@ -8,11 +8,12 @@
     "coffee-script": "^1.8.0",
     "crypto": "0.0.3",
     "formidable": "~1.0.15",
+    "node-expat": "^2.3.10",
     "request": "^2.55.0",
     "stream-buffers": "~0.2.5",
+    "through2": "^2.0.0",
     "tough-cookie": "^0.13.0",
-    "winston": "~0.7.3",
-    "xml2js": "~0.4.4"
+    "winston": "~0.7.3"
   },
   "directories": {
     "lib": "./lib"
@@ -30,14 +31,17 @@
     "transaction",
     "standard",
     "promise",
-    "mls"
+    "mls",
+    "stream",
+    "streams",
+    "streaming"
   ],
   "author": "Steve Bruno <stevenrbruno@icloud.com>",
   "contributors": [
     "Steve Bruno <stevenrbruno@icloud.com>",
     "Joe Ibershoff <joe@realtymaps.com>"
   ],
-  "license": "The MIT License (MIT)",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/sbruno81/rets-client/issues"
   }
