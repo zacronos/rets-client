@@ -10,9 +10,9 @@ are mostly internal, however there is 1 small backward-incompatible change neede
 The large internal refactor plus even a small breaking change warrants a major version bump.
 
 Many of the metadata methods are capable of returning multiple sets of data, including (but not limited to) the
-getAll* methods.  Versions 1.x and 2.x did not handle this properly; version 1.x returned the values from the last set
-encountered, and version 2.x returned the values from the first set encountered.  Version 3.x always returns all values
-encountered, by returning an array of data sets rather than a single one.
+getAll* methods.  Versions 1.x and 2.x did not handle this properly; ~~version 1.x returns the values from the last set
+encountered~~, and version 2.x returns the values from the first set encountered.  (This has been corrected in version
+1.2.0)  Version 3.x always returns all values encountered, by returning an array of data sets rather than a single one.  
 
 In addition to the methods available in 2.x, version 3.0 adds `client.search.stream.searchRets()`, which returns a
 text stream of the raw XML result, and `client.search.stream.query()`, which returns a stream of low-level objects
