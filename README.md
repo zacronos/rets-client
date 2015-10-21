@@ -24,8 +24,8 @@ use the 1.x version, you can use the [v1 branch](https://github.com/sbruno81/ret
 
 ## Implementation Notes
 
-This interface uses promises, and future development plans include an optional stream-based interface
-for better performance with large datasets and/or large objects.
+This interface uses promises, and an optional stream-based interface for better performance with large search results.
+Future development will include an optional stream-based interface for large objects.
 
 This library is written primarily in CoffeeScript, but may be used just as easily in a Node app using Javascript or
 CoffeeScript.  Promises in this module are provided by [Bluebird](https://github.com/petkaantonov/bluebird).
