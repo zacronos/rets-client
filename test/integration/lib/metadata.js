@@ -146,20 +146,25 @@ describe('test client.getAllClass meta functionality', function() {
 
             client.getAllClass(function(error, data) {
                 assert.ifError(error);
-                assert.isNotNull(data, "Data is present");
-                assert(data.Classes, "data.Classes is present");
-                assert.typeOf(data.Classes, 'array', "data.Classes is an array");
-                assert(data.Version, "data.Version field is present");
-                assert(data.Date, "data.Date field is present");
-                assert(data.Resource, "data.Resource field is present");
-                for(var classItem = 0; classItem < data.Classes.length; classItem++) {
+                assert.isArray(data);
+                for(var i = 0; i < data.length; i++) {
+                    var cls = data[i];
+                    assert.isNotNull(cls, "Data is present");
+                    assert(cls.Classes, "data.Classes is present");
+                    assert.typeOf(cls.Classes, 'array', "data.Classes is an array");
+                    assert(cls.Version, "data.Version field is present");
+                    assert(cls.Date, "data.Date field is present");
+                    assert(cls.Resource, "data.Resource field is present");
+                    for(var classItem = 0; classItem < cls.Classes.length; classItem++) {
 
-                    assert.isNotNull(data.Classes[classItem]);
-                    assert(data.Classes[classItem].ClassName, "data.Classes["+classItem+"] ClassName field is present");
-                    assert(data.Classes[classItem].StandardName, "data.Classes["+classItem+"] StandardName field is present");
-                    assert(data.Classes[classItem].VisibleName, "data.Classes["+classItem+"] VisibleName field is present");
-                    assert(data.Classes[classItem].TableVersion, "data.Classes["+classItem+"] TableVersion field is present");
+                        assert.isNotNull(cls.Classes[classItem]);
+                        assert(cls.Classes[classItem].ClassName, "cls.Classes["+classItem+"] ClassName field is present");
+                        assert(cls.Classes[classItem].StandardName, "cls.Classes["+classItem+"] StandardName field is present");
+                        assert(cls.Classes[classItem].VisibleName, "cls.Classes["+classItem+"] VisibleName field is present");
+                        assert(cls.Classes[classItem].TableVersion, "cls.Classes["+classItem+"] TableVersion field is present");
+                    }
                 }
+
 
                 client.logout(function(error){
                     assert.ifError(error);
@@ -247,23 +252,27 @@ describe('test client.getAllTable meta functionality', function() {
 
             client.getAllTable(function(error, data) {
                 assert.ifError(error);
-                assert.isNotNull(data, "Data is present");
-                assert(data.Fields, "data.Fields is present");
-                assert.typeOf(data.Fields, 'array', "data.Fields is an array");
+                assert.isArray(data);
+                for(var i = 0; i < data.length; i++) {
+                    var tbl = data[i];
+                    assert.isNotNull(tbl, "Data is present");
+                    assert(tbl.Fields, "data.Fields is present");
+                    assert.typeOf(tbl.Fields, 'array', "data.Fields is an array");
 
-                assert(data.Version, "data.Version field is present");
-                assert(data.Date, "data.Date field is present");
-                assert(data.Resource, "data.Resource field is present");
-                assert(data.Class, "data.Class field is present");
+                    assert(tbl.Version, "data.Version field is present");
+                    assert(tbl.Date, "data.Date field is present");
+                    assert(tbl.Resource, "data.Resource field is present");
+                    assert(tbl.Class, "data.Class field is present");
 
-                for(var fieldItem = 0; fieldItem < data.Fields.length; fieldItem++) {
+                    for(var fieldItem = 0; fieldItem < tbl.Fields.length; fieldItem++) {
 
-                    assert.isNotNull(data.Fields[fieldItem]);
-                    assert(data.Fields[fieldItem].MetadataEntryID, "data.Fields["+fieldItem+"] MetadataEntryID field is present");
-                    assert(data.Fields[fieldItem].SystemName, "data.Fields["+fieldItem+"] SystemName field is present");
-                    assert(data.Fields[fieldItem].ShortName, "data.Fields["+fieldItem+"] ShortName field is present");
-                    assert(data.Fields[fieldItem].LongName, "data.Fields["+fieldItem+"] LongName field is present");
-                    assert(data.Fields[fieldItem].DataType, "data.Fields["+fieldItem+"] DataType field is present");
+                        assert.isNotNull(tbl.Fields[fieldItem]);
+                        assert(tbl.Fields[fieldItem].MetadataEntryID, "tbl.Fields["+fieldItem+"] MetadataEntryID field is present");
+                        assert(tbl.Fields[fieldItem].SystemName, "tbl.Fields["+fieldItem+"] SystemName field is present");
+                        assert(tbl.Fields[fieldItem].ShortName, "tbl.Fields["+fieldItem+"] ShortName field is present");
+                        assert(tbl.Fields[fieldItem].LongName, "tbl.Fields["+fieldItem+"] LongName field is present");
+                        assert(tbl.Fields[fieldItem].DataType, "tbl.Fields["+fieldItem+"] DataType field is present");
+                    }
                 }
 
                 client.logout(function(error){
@@ -352,25 +361,29 @@ describe('test client.getAllLookups meta functionality', function() {
 
             client.getAllLookups(function(error, data) {
                 assert.ifError(error);
-                assert.isNotNull(data, "Data is present");
+                assert.isArray(data);
 
-                assert(data.Lookups, "data.Lookups is present");
-                assert.typeOf(data.Lookups, 'array', "data.Lookups is an array");
+                for(var i = 0; i < data.length; i++) {
+                    var lookup = data[i];
+                    assert.isNotNull(lookup, "Data is present");
 
-                assert(data.Version, "data.Version field is present");
-                assert(data.Date, "data.Date field is present");
-                assert(data.Resource, "data.Resource field is present");
+                    assert(lookup.Lookups, "data.Lookups is present");
+                    assert.typeOf(lookup.Lookups, 'array', "data.Lookups is an array");
+
+                    assert(lookup.Version, "data.Version field is present");
+                    assert(lookup.Date, "data.Date field is present");
+                    assert(lookup.Resource, "data.Resource field is present");
 
 
-                for(var lookupItem = 0; lookupItem < data.Lookups.length; lookupItem++) {
+                    for(var lookupItem = 0; lookupItem < lookup.Lookups.length; lookupItem++) {
 
-                    assert.isNotNull(data.Lookups[lookupItem]);
-                    assert(data.Lookups[lookupItem].MetaDataEntryID, "data.Lookups["+lookupItem+"] MetadataEntryID field is present");
-                    assert(data.Lookups[lookupItem].LookupName, "data.Lookups["+lookupItem+"] LookupName field is present");
-                    assert(data.Lookups[lookupItem].VisibleName, "data.Lookups["+lookupItem+"] VisibleName field is present");
-                    assert(data.Lookups[lookupItem].Version, "data.Lookups["+lookupItem+"] Version field is present");
-                    assert(data.Lookups[lookupItem].Date, "data.Lookups["+lookupItem+"] Date field is present");
+                        assert.isNotNull(lookup.Lookups[lookupItem]);
+                        assert(lookup.Lookups[lookupItem].MetadataEntryID, "lookup.Lookups["+lookupItem+"] MetadataEntryID field is present");
+                        assert(lookup.Lookups[lookupItem].LookupName, "lookup.Lookups["+lookupItem+"] LookupName field is present");
+                        assert(lookup.Lookups[lookupItem].VisibleName, "lookup.Lookups["+lookupItem+"] VisibleName field is present");
+                    }
                 }
+
 
                 client.logout(function(error){
                     assert.ifError(error);
@@ -416,11 +429,9 @@ describe('test client.getLookups meta functionality', function() {
                 for(var lookupItem = 0; lookupItem < data.Lookups.length; lookupItem++) {
 
                     assert.isNotNull(data.Lookups[lookupItem]);
-                    assert(data.Lookups[lookupItem].MetaDataEntryID, "data.Lookups["+lookupItem+"] MetadataEntryID field is present");
+                    assert(data.Lookups[lookupItem].MetadataEntryID, "data.Lookups["+lookupItem+"] MetadataEntryID field is present");
                     assert(data.Lookups[lookupItem].LookupName, "data.Lookups["+lookupItem+"] LookupName field is present");
                     assert(data.Lookups[lookupItem].VisibleName, "data.Lookups["+lookupItem+"] VisibleName field is present");
-                    assert(data.Lookups[lookupItem].Version, "data.Lookups["+lookupItem+"] Version field is present");
-                    assert(data.Lookups[lookupItem].Date, "data.Lookups["+lookupItem+"] Date field is present");
                 }
 
                 client.logout(function(error){
@@ -457,23 +468,30 @@ describe('test client.getAllLookupTypes meta functionality', function() {
 
             client.getAllLookupTypes(function(error, data) {
                 assert.ifError(error);
-                assert.isNotNull(data, "Data is present");
-                assert(data.LookupTypes, "data.LookupTypes is present");
-                assert.typeOf(data.LookupTypes, 'array', "data.LookupTypes is an array");
 
-                assert(data.Version, "data.Version field is present");
-                assert(data.Date, "data.Date field is present");
-                assert(data.Resource, "data.Resource field is present");
-                assert(data.Lookup, "data.Lookup field is present");
+                assert.isArray(data);
 
-                for(var lookupTypeItem = 0; lookupTypeItem < data.LookupTypes.length; lookupTypeItem++) {
+                for(var i = 0; i < data.length; i++) {
+                    var lookupType = data[i];
 
-                    assert.isNotNull(data.LookupTypes[lookupTypeItem]);
+                    assert.isNotNull(lookupType, "Data is present");
+                    assert(lookupType.LookupTypes, "data.LookupTypes is present");
+                    assert.typeOf(lookupType.LookupTypes, 'array', "data.LookupTypes is an array");
 
-                    assert(data.LookupTypes[lookupTypeItem].MetadataEntryID, "data.LookupTypes["+lookupTypeItem+"] MetadataEntryID field is present");
-                    assert(data.LookupTypes[lookupTypeItem].LongValue, "data.LookupTypes["+lookupTypeItem+"] LongValue field is present");
-                    assert(data.LookupTypes[lookupTypeItem].ShortValue, "data.LookupTypes["+lookupTypeItem+"] ShortValue field is present");
-                    assert(data.LookupTypes[lookupTypeItem].Value, "data.LookupTypes["+lookupTypeItem+"] Value field is present");
+                    assert(lookupType.Version, "data.Version field is present");
+                    assert(lookupType.Date, "data.Date field is present");
+                    assert(lookupType.Resource, "data.Resource field is present");
+                    assert(lookupType.Lookup, "data.Lookup field is present");
+
+                    for(var lookupTypeItem = 0; lookupTypeItem < lookupType.LookupTypes.length; lookupTypeItem++) {
+
+                        assert.isNotNull(lookupType.LookupTypes[lookupTypeItem]);
+
+                        assert(lookupType.LookupTypes[lookupTypeItem].MetadataEntryID, "lookupType.LookupTypes["+lookupTypeItem+"] MetadataEntryID field is present");
+                        assert(lookupType.LookupTypes[lookupTypeItem].LongValue, "lookupType.LookupTypes["+lookupTypeItem+"] LongValue field is present");
+                        assert(lookupType.LookupTypes[lookupTypeItem].ShortValue, "lookupType.LookupTypes["+lookupTypeItem+"] ShortValue field is present");
+                        assert(lookupType.LookupTypes[lookupTypeItem].Value, "lookupType.LookupTypes["+lookupTypeItem+"] Value field is present");
+                    }
                 }
 
                 client.logout(function(error){
