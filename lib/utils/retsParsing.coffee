@@ -22,7 +22,6 @@ getSimpleParser = (errCallback) ->
     currElementName: null
     parser: new expat.Parser('UTF-8')
     finish: () ->
-      #result.parser.stop()
       result.parser.removeAllListeners()
     status: null
 
