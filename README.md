@@ -56,7 +56,7 @@ should match existing code style.
         username:retsUser,
         password:retsPassword,
         version:'RETS/1.7.2',
-        userAgent:'RETS node-client/1.0'
+        userAgent:'RETS node-client/3.0'
     };
 ...
 ```    
