@@ -42,7 +42,7 @@ Issue tickets and pull requests are welcome.  Pull requests must be backward-com
 should match existing code style.
 
 #### TODO
-- create optional streaming interface for object downloads; when implemented, this will make version 3.1
+- create optional streaming interface for object downloads; when implemented, this will be a minor version bump
 - create unit tests -- specifically ones that run off example RETS data rather than requiring access to a real RETS server
 
 

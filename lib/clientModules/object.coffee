@@ -7,6 +7,7 @@ streamBuffers = require('stream-buffers')
 Promise = require('bluebird')
 
 multipart = require('../utils/multipart')
+retsHttp = require('../utils/retsHttp')
 
 
 ###
@@ -33,19 +34,31 @@ getObject = (resourceType, objectType, objectId) ->
   writableStreamBuffer = new (streamBuffers.WritableStreamBuffer)(
     initialSize: 100 * 1024
     incrementAmount: 10 * 1024)
-  req = @retsSession(options)
   
   #pipe object data to stream buffer
-  new Promise (resolve, reject) ->
-    req.pipe(writableStreamBuffer)
-    req.on('error', reject)
+  new Promise (resolve, reject) =>
     contentType = null
+    response = null
+    done = false
+    fail = (error) ->
+      if done
+        return
+      done = true
+      reject(error)
+    req = retsHttp.streamRetsMethod('getObject', @retsSession, options, fail)
+    req.on('error', fail)
     req.on 'response', (_response) ->
+      response = _response
       contentType = _response.headers['content-type']
-    req.on 'end', ->
+    req.on 'end', () ->
+      if done
+        return
+      done = true
       resolve
         contentType: contentType
         data: writableStreamBuffer.getContents()
+        response: response
+    req.pipe(writableStreamBuffer)
 
 ###
 # Helper that retrieves a list of photo objects.
@@ -66,7 +79,7 @@ getObject = (resourceType, objectType, objectId) ->
 getPhotos = (resourceType, photoType, matrixId) ->
   @getObject(resourceType, photoType, matrixId + ':*')
   .then (result) ->
-    multipartBoundary = result.contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/ig)[0].match(/[^boundary=^"]\w+[^"]/ig)[0]
+    multipartBoundary = result.contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/ig)[0].match(/[^boundary=^"]\w+[^"]/ig)?[0]
     if !multipartBoundary
       throw new Error('Could not find multipart boundary')
     multipart.parseMultipart(new Buffer(result.data), multipartBoundary)
@@ -78,6 +91,6 @@ getPhotos = (resourceType, photoType, matrixId) ->
 module.exports = (_retsSession) ->
   if !_retsSession
     throw new Error('System data not set; invoke login().')
-  retsSession: Promise.promisify(_retsSession)
+  retsSession: _retsSession
   getObject: getObject
   getPhotos: getPhotos
