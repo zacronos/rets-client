@@ -6,52 +6,38 @@ logger = require('winston')
 MultipartParser = require('formidable/lib/multipart_parser').MultipartParser
 Stream = require('stream').Stream
 StringDecoder = require('string_decoder').StringDecoder
-streamBuffers = require('stream-buffers')
+WritableStreamBuffer = require('stream-buffers').WritableStreamBuffer
 Promise = require('bluebird')
 
 
 # Multipart parser derived from formidable library. See https://github.com/felixge/node-formidable
 
 
-parseMultipart = (buffer, _multipartBoundary) -> Promise.try () ->
-  parser = getParser(_multipartBoundary)
-  if parser instanceof Error
-    return Promise.reject(parser)
-  parser.write(buffer)
-  dataBufferList = []
-  for streamBuffer in parser.streamBufferList
-    dataBufferList.push
-      buffer: streamBuffer.streamBuffer.getContents()
-      mime: streamBuffer.mime
-      description: streamBuffer.description
-      contentDescription: streamBuffer.contentDescription
-      contentId: streamBuffer.contentId
-      objectId: streamBuffer.objectId
-  dataBufferList
+_kebabToCamel = (str) ->
+  str.replace /\w-\w/g, (boundary) ->
+    boundary.charAt(0) + boundary.charAt(2).toUpperCase()
 
-
-getParser = (_multipartBoundary) ->
-  streamBufferList = []
+parseMultipart = (buffer, _multipartBoundary) -> new Promise (resolve, reject) ->
   parser = new MultipartParser()
+  encoding = 'utf8'
+  bufferList = []
   headerField = ''
   headerValue = ''
-  part = {}
-  encoding = 'utf8'
-  ended = false
-  maxFields = 1000
-  maxFieldsSize = 2 * 1024 * 1024
+  part = null
+  done = false
+  transferBuffer = null
+  transferEncoding = null
+  writableStreamBuffer = null
 
   parser.onPartBegin = () ->
-    part = new Stream()
-    part.readable = true
-    part.headers = {}
-    part.name = null
-    part.filename = null
-    part.mime = null
-    part.transferEncoding = 'binary'
-    part.transferBuffer = ''
+    part = {}
+    transferEncoding = 'binary'
+    transferBuffer = ''
     headerField = ''
     headerValue = ''
+    writableStreamBuffer = new WritableStreamBuffer
+      initialSize: 100 * 1024
+      incrementAmount: 10 * 1024
 
   parser.onHeaderField = (b, start, end) ->
     headerField += b.toString(encoding, start, end)
@@ -61,84 +47,72 @@ getParser = (_multipartBoundary) ->
 
   parser.onHeaderEnd = () =>
     headerField = headerField.toLowerCase()
-    part.headers[headerField] = headerValue
     if headerField == 'content-disposition'
-      m = headerValue.match(/\bname="([^"]+)"/i)
-      if m
-        part.name = m[1]
-      part.filename = self._fileName(headerValue)
+      dispositions = headerValue.split(/\s*;\s*/)
+      for disposition,i in dispositions
+        if i == 0
+          part['dispositionType'] = disposition
+        else
+          split = disposition.indexOf('=')
+          if split > -1
+            paramName = disposition.substr(0, split)
+            if disposition.charAt(split+1) == '"'
+              split++
+            end = disposition.length
+            if disposition.charAt(disposition.length-1) == '"'
+              end--
+            paramValue = disposition.substring(split+1, end)
+            part[_kebabToCamel(paramName)] = paramValue
     else if headerField == 'content-type'
       part.mime = headerValue
     else if headerField == 'content-transfer-encoding'
-      part.transferEncoding = headerValue.toLowerCase()
+      transferEncoding = headerValue.toLowerCase()
+    else
+      part[_kebabToCamel(headerField)] = headerValue
     headerField = ''
     headerValue = ''
 
   parser.onHeadersEnd = () ->
-    switch part.transferEncoding
+    if done
+      return
+    switch transferEncoding
       
       when 'binary', '7bit', '8bit'
         parser.onPartData = (b, start, end) ->
-          part.emit('data', b.slice(start, end))
+          writableStreamBuffer.write(b.slice(start, end))
         parser.onPartEnd = () ->
-          part.emit('end')
+          part.buffer = writableStreamBuffer.getContents()
+          bufferList.push(part)
       
       when 'base64'
+        # base64 encoding has 4 characters for every three bytes of binary encoding; therefore you
+        # can only safely decode from base64 in multiples of 4-character chunks
+        
         parser.onPartData = (b, start, end) ->
-          part.transferBuffer += b.slice(start, end).toString('ascii')
-
-          ###
-           four bytes (chars) in base64 converts to three bytes in binary
-           encoding. So we should always work with a number of bytes that
-           can be divided by 4, it will result in a number of bytes that
-           can be divided vy 3.
-          ###
-
-          offset = parseInt(part.transferBuffer.length / 4, 10) * 4
-          part.emit('data', new Buffer(part.transferBuffer.substring(0, offset), 'base64'))
-          part.transferBuffer = part.transferBuffer.substring(offset)
+          transferBuffer += b.slice(start, end).toString('ascii')
+          offset = Math.floor(transferBuffer.length / 4) * 4
+          writableStreamBuffer.write(new Buffer(transferBuffer.substring(0, offset), 'base64'))
+          transferBuffer = transferBuffer.substring(offset)
 
         parser.onPartEnd = () ->
-          part.emit('data', new Buffer(part.transferBuffer, 'base64'))
-          part.emit('end')
+          writableStreamBuffer.write(new Buffer(transferBuffer, 'base64'))
+          part.buffer = writableStreamBuffer.getContents()
+          bufferList.push(part)
 
       else
-        return new Error('unknown transfer-encoding')
-    handlePart(part)
+        done = true
+        reject(new Error("unknown content-transfer-encoding: #{JSON.stringify(transferEncoding)}"))
 
   parser.onEnd = () ->
-    ended = true
+    resolve(bufferList)
 
-  handlePart = (part) ->
-    fieldsSize = 0
-    if part.filename == undefined
-      value = ''
-      decoder = new StringDecoder(encoding)
-      part.on 'data', (buffer) ->
-        fieldsSize += buffer.length
-        if fieldsSize > maxFieldsSize
-          logger.error('maxFieldsSize exceeded, received ' + fieldsSize + ' bytes of field data')
-          return
-        value += decoder.write(buffer)
+  parser.initWithBoundary(_multipartBoundary)
+  parser.write(buffer)
+  err = parser.end()
+  if err
+    if done
       return
-    writableStreamBuffer = new (streamBuffers.WritableStreamBuffer)(
-      initialSize: 100 * 1024
-      incrementAmount: 10 * 1024
-    )
-    part.on 'data', (buffer) ->
-      if buffer.length == 0
-        return
-      writableStreamBuffer.write(buffer)
-    part.on 'end', ->
-      streamBufferList.push
-        streamBuffer: writableStreamBuffer
-        mime: part.mime
-        contentDescription: part.headers['content-description']
-        contentId: part.headers['content-id']
-        objectId: part.headers['object-id']
-
-  parser.initWithBoundary _multipartBoundary
-  parser.streamBufferList = streamBufferList
-  parser
+    done = true
+    reject(err)
 
 module.exports.parseMultipart = parseMultipart
