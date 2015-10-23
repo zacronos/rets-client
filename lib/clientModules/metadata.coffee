@@ -129,7 +129,7 @@ module.exports = (_retsSession) ->
   retsSession: Promise.promisify(_retsSession)
   getMetadata: getMetadata
   getSystem: getSystem
-  getResources:       _getParsedMetadataFactory('METADATA-RESOURCE')
+  getResources:       _getParsedMetadataFactory('METADATA-RESOURCE').bind(null, '0')
   getForeignKeys:     _getParsedMetadataFactory('METADATA-FOREIGNKEYS')
   getClass:           _getParsedMetadataFactory('METADATA-CLASS')
   getTable:           _getParsedMetadataFactory('METADATA-TABLE')
