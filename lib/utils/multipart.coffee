@@ -14,7 +14,7 @@ Promise = require('bluebird')
 
 
 _kebabToCamel = (str) ->
-  str.replace /\w-\w/g, (boundary) ->
+  str.toLowerCase().replace /\w-\w/g, (boundary) ->
     boundary.charAt(0) + boundary.charAt(2).toUpperCase()
 
 parseMultipart = (buffer, _multipartBoundary) -> new Promise (resolve, reject) ->
