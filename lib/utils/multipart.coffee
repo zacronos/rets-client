@@ -14,6 +14,8 @@ Promise = require('bluebird')
 
 
 _kebabToCamel = (str) ->
+  if !str?
+    return str
   str.toLowerCase().replace /\w-\w/g, (boundary) ->
     boundary.charAt(0) + boundary.charAt(2).toUpperCase()
 
