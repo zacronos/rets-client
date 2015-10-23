@@ -10,11 +10,6 @@ errors = require('./errors')
 
 
 callRetsMethod = (methodName, retsSession, queryOptions) ->
-  ###
-  Promise.resolve
-    body: require('fs').readFileSync("/Users/joe/work/realtymaps/tmp/dump_#{methodName}_#{queryOptions.offset||0}.xml")
-    response: {"headers":{"rets-version":"RETS/1.7.2","server":"nginx/1.6.0"}}
-  ###
   logger.debug("RETS #{methodName}", queryOptions)
   Promise.try () ->
     retsSession(qs: queryOptions)
@@ -31,7 +26,6 @@ callRetsMethod = (methodName, retsSession, queryOptions) ->
 
 
 streamRetsMethod = (methodName, retsSession, queryOptions, failCallback) ->
-  #require('fs').createReadStream("/Users/joe/work/realtymaps/tmp/dump_#{methodName}_#{queryOptions.offset||0}.xml")
   logger.debug("RETS #{methodName} stream", queryOptions)
   done = false
   errorHandler = (error) ->
