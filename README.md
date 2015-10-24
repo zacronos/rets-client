@@ -5,11 +5,16 @@ A RETS (Real Estate Transaction Standard) client for Node.js.
 
 ## Changes
 
+#### 3.2.2
+
+Version 3.2.2 adds support for per-object errors when calling `client.objects.getPhotos()`.  The
+[Example RETS Session](#example-rets-session) illustrates proper error checking.
+
 #### 3.2.0
 
-Version 3.2 passes through any multipart headers (except for content-disposition, which gets split up
-first, and content-type/content-transfer-encoding which are hidden) onto the objects resolved from
-`client.objects.getPhotos()`.  It also fixes a race condition in `client.objects.getPhotos()`.
+Version 3.2 passes through any multipart headers (except for content-disposition, which gets split up first;
+content-type which is renamed to `mime`; and content-transfer-encoding which is used internally and not passed) onto
+the objects resolved from `client.objects.getPhotos()`. It also fixes a race condition in `client.objects.getPhotos()`.
 
 #### 3.1.0
 
@@ -41,7 +46,8 @@ should result in a much lower memory footprint than their corresponding non-stre
 ## Implementation Notes
 
 This interface uses promises, and an optional stream-based interface for better performance with large search results.
-Future development will include an optional stream-based interface for large objects.
+Future development will include an optional stream-based interface for object downloads, and an improved API for the
+non-streaming object methods.
 
 This library is written primarily in CoffeeScript, but may be used just as easily in a Node app using Javascript or
 CoffeeScript.  Promises in this module are provided by [Bluebird](https://github.com/petkaantonov/bluebird).
@@ -60,7 +66,7 @@ Issue tickets and pull requests are welcome.  Pull requests must be backward-com
 should match existing code style.
 
 #### TODO
-- create optional streaming interface for object downloads; when implemented, this will be a minor version bump
+- create optional streaming interface for object downloads; when implemented, this will be a 4.0 release
 - create unit tests -- specifically ones that run off example RETS data rather than requiring access to a real RETS server
 
 
@@ -170,11 +176,22 @@ should match existing code style.
         console.log("========  Photo Results  ========");
         console.log("=================================");
         for (var i = 0; i < photoList.length; i++) {
-          console.log("Photo " + (i + 1) + " MIME type: " + photoList[i].mime);
-          fs.writeFileSync(
-            "/tmp/photo" + (i + 1) + "." + photoList[i].mime.match(/\w+\/(\w+)/i)[1],
-            photoList[i].buffer
-          );
+          if (photoList[i].error) {
+            var msg;
+            if (photoList[i].error instanceof rets.RetsReplyError) {
+              msg = "Photo " + (i + 1) + " had an error: " + photoList[i].error;
+            } else {
+              msg = "Parsing error encountered after photo " + i +
+                "; more photos may have been available.  Error: " + photoList[i].error;
+            }
+            console.log(msg);
+          } else {
+            console.log("Photo " + (i + 1) + " MIME type: " + photoList[i].mime);
+            fs.writeFileSync(
+              "/tmp/photo" + (i + 1) + "." + photoList[i].mime.match(/\w+\/(\w+)/i)[1],
+              photoList[i].buffer
+            );
+          }
         }
       });
   }).catch(function (error) {

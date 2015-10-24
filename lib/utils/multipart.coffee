@@ -9,6 +9,8 @@ StringDecoder = require('string_decoder').StringDecoder
 WritableStreamBuffer = require('stream-buffers').WritableStreamBuffer
 Promise = require('bluebird')
 
+retsParsing = require('./retsParsing')
+
 
 # Multipart parser derived from formidable library. See https://github.com/felixge/node-formidable
 
@@ -22,7 +24,7 @@ _kebabToCamel = (str) ->
 parseMultipart = (buffer, _multipartBoundary) -> new Promise (resolve, reject) ->
   parser = new MultipartParser()
   encoding = 'utf8'
-  bufferList = []
+  partList = []
   headerField = ''
   headerValue = ''
   part = null
@@ -32,7 +34,9 @@ parseMultipart = (buffer, _multipartBoundary) -> new Promise (resolve, reject) -
   writableStreamBuffer = null
 
   parser.onPartBegin = () ->
-    part = {}
+    part =
+      buffer: null
+      error: null
     transferEncoding = 'binary'
     transferBuffer = ''
     headerField = ''
@@ -66,7 +70,7 @@ parseMultipart = (buffer, _multipartBoundary) -> new Promise (resolve, reject) -
             paramValue = disposition.substring(split+1, end)
             part[_kebabToCamel(paramName)] = paramValue
     else if headerField == 'content-type'
-      part.mime = headerValue
+      part.mime = headerValue.toLowerCase()
     else if headerField == 'content-transfer-encoding'
       transferEncoding = headerValue.toLowerCase()
     else
@@ -77,6 +81,19 @@ parseMultipart = (buffer, _multipartBoundary) -> new Promise (resolve, reject) -
   parser.onHeadersEnd = () ->
     if done
       return
+    
+    if part.mime == 'text/xml'
+      # can happen when there's an error that affects only 1 object in the multipart response
+      retsParser = retsParsing.getSimpleParser (error) ->
+        part.error = error
+        partList.push(part)
+      parser.onPartData = (b, start, end) ->
+        retsParser.parser.write(b.slice(start, end))
+      parser.onPartEnd = () ->
+        retsParser.parser.end()
+      return
+
+    # this is the normal path -- probably an image object
     switch transferEncoding
       
       when 'binary', '7bit', '8bit'
@@ -84,7 +101,7 @@ parseMultipart = (buffer, _multipartBoundary) -> new Promise (resolve, reject) -
           writableStreamBuffer.write(b.slice(start, end))
         parser.onPartEnd = () ->
           part.buffer = writableStreamBuffer.getContents()
-          bufferList.push(part)
+          partList.push(part)
       
       when 'base64'
         # base64 encoding has 4 characters for every three bytes of binary encoding; therefore you
@@ -99,22 +116,36 @@ parseMultipart = (buffer, _multipartBoundary) -> new Promise (resolve, reject) -
         parser.onPartEnd = () ->
           writableStreamBuffer.write(new Buffer(transferBuffer, 'base64'))
           part.buffer = writableStreamBuffer.getContents()
-          bufferList.push(part)
+          partList.push(part)
 
       else
         done = true
         reject(new Error("unknown content-transfer-encoding: #{JSON.stringify(transferEncoding)}"))
 
   parser.onEnd = () ->
-    resolve(bufferList)
-
-  parser.initWithBoundary(_multipartBoundary)
-  parser.write(buffer)
-  err = parser.end()
-  if err
     if done
       return
     done = true
-    reject(err)
+    resolve(partList)
+
+  parser.initWithBoundary(_multipartBoundary)
+  parser.write(buffer)
+  process.nextTick () ->
+    err = parser.end()
+    if err
+      if done
+        return
+      done = true
+      if partList.length == 0
+        # we didn't get any valid results, so reject the whole request with an error
+        reject(err)
+      else
+        # we want to return the results that we can, so just append the errored part to the end
+        if partList[partList.length-1] == part
+          part = {error: err}
+        else
+          part.error = err
+        partList.push(part)
+        resolve(partList)
 
 module.exports.parseMultipart = parseMultipart

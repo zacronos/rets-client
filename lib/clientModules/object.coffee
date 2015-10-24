@@ -74,11 +74,18 @@ getObject = (resourceType, objectType, objectId) ->
 # @param matrixId Photo source identifier (listing id, agent id, etc).
 #
 # Each item in resolved data list is an object with the following data elements:
-#   buffer: <data buffer>,
-#   mime: <data buffer mime type>,
-#   contentId: <photo source identifier, i.e. resource-entity-id>,
+#   contentId: <photo source identifier, i.e. resource-entity-id>
 #   objectId: <identifier for this photo within the resource>
+#   buffer: <data buffer>, or <null> if there was an error affecting only that photo/object
+#   error: <null>, or <an Error instance> if there was an error affecting only that photo/object
+#   mime: <data buffer mime type>,
 #   ...: other elements may be provided as well if sent by the server, such as contentDescription, dispositionType, etc
+#
+#   NOTE: if an item in the list has an error field set to an instance of RetsReplyError, then the error only applies
+#   to that one photo.  However, if a generic Error is found in the last object of the array, then it is most likely a
+#   multipart parse error, which means there may have been more photos in the response which could not be parsed;
+#   buffers from the list prior to the error should be correct, but in this case you can't rely on the length of the
+#   array to tell you how many photos there should have been.
 ###
 
 getPhotos = (resourceType, photoType, matrixId) ->
@@ -89,8 +96,7 @@ getPhotos = (resourceType, photoType, matrixId) ->
       throw new Error('Could not find multipart boundary')
     multipart.parseMultipart(new Buffer(result.data), multipartBoundary)
     .catch (err) ->
-      logger.error err
-      throw new Error('Error parsing multipart data')
+      throw new Error("Error parsing multipart data: #{err}")
 
 
 module.exports = (_retsSession) ->
