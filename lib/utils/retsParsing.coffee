@@ -72,6 +72,8 @@ getStreamParser = (metadataTag, rawData) ->
   retsStream = through2.obj()
   finish = (type, payload) ->
     parser.removeAllListeners()
+    # ignore errors after this point
+    parser.on('error', () -> ### noop ###)
     retsStream.write(type: type, payload: payload)
     retsStream.end()
   fail = (err) ->
