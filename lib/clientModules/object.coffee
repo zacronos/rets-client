@@ -32,7 +32,7 @@ getObject = (resourceType, objectType, objectId) ->
     throw new Error('Object id is required')
   options =
     Type: objectType
-    Id: objectId
+    ID: objectId
     Resource: resourceType
   
   # prepare stream buffer for object data

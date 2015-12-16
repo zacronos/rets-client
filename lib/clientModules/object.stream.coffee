@@ -4,5 +4,5 @@
 
 
 ###
-  This file is a placeholder for the object streaming features to be added in v3.1.0
+  This file is a placeholder for the object streaming features to be added in v4.x
 ###
