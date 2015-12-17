@@ -91,7 +91,9 @@ getObject = (resourceType, objectType, objectId) ->
 getPhotos = (resourceType, photoType, matrixId) ->
   @getObject(resourceType, photoType, matrixId + ':*')
   .then (result) ->
-    multipartBoundary = result.contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/ig)[0]?.match(/[^boundary=^"]\w+[^"]/ig)?[0]
+    multipartBoundary = result.contentType.match(/boundary="[^"]+"/ig)?[0].slice('boundary="'.length, -1)
+    if !multipartBoundary
+      multipartBoundary = result.contentType.match(/boundary=[^;]+/ig)?[0].slice('boundary='.length)
     if !multipartBoundary
       throw new Error('Could not find multipart boundary')
     multipart.parseMultipart(new Buffer(result.data), multipartBoundary)
