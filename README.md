@@ -101,48 +101,72 @@ should match existing code style.
   var rets = require('rets-client');
   var fs = require('fs');
   var photoSourceId = '12345'; // <--- dummy example ID!  this will usually be a MLS number / listing id
-  var outputFields = function(obj, fields) {
+  var outputFields = function(obj, opts) {
+    if (!opts) opts = {};
+    
+    var excludeFields;
+    var loopFields;
+    if (opts.exclude) {
+      excludeFields = opts.exclude;
+      loopFields = Object.keys(obj);
+    } else if (opts.fields) {
+      loopFields = opts.fields;
+      excludeFields = [];
+    } else {
+      loopFields = Object.keys(obj);
+      excludeFields = [];
+    }
     for (var i=0; i<fields.length; i++) {
-      console.log(fields[i]+": "+obj[fields[i]]);
+      if (excludeFields.indexOf(fields[i]) == -1) {
+        console.log("    "+fields[i]+": "+obj[fields[i]]);
+      }
     }
     console.log("");
   };
+  
   // establish connection to RETS server which auto-logs out when we're done
   rets.getAutoLogoutClient(clientSettings, function (client) {
+    console.log("===================================");
+    console.log("========  System Metadata  ========");
+    console.log("===================================");
+    outputFields(client.systemData);
+    
     //get resources metadata
     return client.metadata.getResources()
       .then(function (data) {
         console.log("======================================");
         console.log("========  Resources Metadata  ========");
         console.log("======================================");
-        outputFields(data, ['Version', 'Date']);
+        outputFields(data.results[0].info);
         for (var dataItem = 0; dataItem < data.results[0].metadata.length; dataItem++) {
           console.log("-------- Resource " + dataItem + " --------");
-          outputFields(data.results[0].metadata[dataItem], ['ResourceID', 'StandardName', 'VisibleName', 'ObjectVersion']);
+          outputFields(data.results[0].metadata[dataItem], {fields: ['ResourceID', 'StandardName', 'VisibleName', 'ObjectVersion']});
         }
       }).then(function () {
+      
         //get class metadata
         return client.metadata.getClass("Property");
       }).then(function (data) {
         console.log("===========================================================");
         console.log("========  Class Metadata (from Property Resource)  ========");
         console.log("===========================================================");
-        outputFields(data, ['Version', 'Date', 'Resource']);
+        outputFields(data.results[0].info);
         for (var classItem = 0; classItem < data.results[0].metadata.length; classItem++) {
           console.log("-------- Table " + classItem + " --------");
-          outputFields(data.results[0].metadata[classItem], ['ClassName', 'StandardName', 'VisibleName', 'TableVersion']);
+          outputFields(data.results[0].metadata[classItem], {fields: ['ClassName', 'StandardName', 'VisibleName', 'TableVersion']});
         }
       }).then(function () {
+      
         //get field data for open houses
         return client.metadata.getTable("OpenHouse", "OPENHOUSE");
       }).then(function (data) {
         console.log("=============================================");
         console.log("========  OpenHouse Table Metadata  ========");
         console.log("=============================================");
-        outputFields(data, ['Version', 'Date', 'Resource', 'Class']);
+        outputFields(data.results[0].info);
         for (var tableItem = 0; tableItem < data.results[0].metadata.length; tableItem++) {
           console.log("-------- Field " + tableItem + " --------");
-          outputFields(data.results[0].metadata[tableItem], ['MetadataEntryID', 'SystemName', 'ShortName', 'LongName', 'DataType']);
+          outputFields(data.results[0].metadata[tableItem], {fields: ['MetadataEntryID', 'SystemName', 'ShortName', 'LongName', 'DataType']});
         }
         return data.results[0].metadata
       }).then(function (fieldsData) {
@@ -152,23 +176,25 @@ should match existing code style.
         }
         return plucked;
       }).then(function (fields) {
+      
         //perform a query using DQML2 -- pass resource, class, and query, and options
         return client.search.query("OpenHouse", "OPENHOUSE", "(OpenHouseType=PUBLIC),(ActiveYN=1)", {limit:100, offset:10})
         .then(function (searchData) {
           console.log("===========================================");
           console.log("========  OpenHouse Query Results  ========");
           console.log("===========================================");
-          console.log("");
+          outputFields(searchData, {exclude: ['results']});
           //iterate through search results
           for (var dataItem = 0; dataItem < searchData.results.length; dataItem++) {
             console.log("-------- Result " + dataItem + " --------");
-            outputFields(searchData.results[dataItem], fields);
+            outputFields(searchData.results[dataItem], {fields: fields});
           }
           if (searchData.maxRowsExceeded) {
             console.log("-------- More rows available!");
           }
         });
       }).then(function () {
+      
         // get photos
         return client.objects.getPhotos("Property", "LargePhoto", photoSourceId)
       }).then(function (photoList) {
@@ -194,6 +220,7 @@ should match existing code style.
           }
         }
       });
+      
   }).catch(function (error) {
     console.log("ERROR: issue encountered: "+(error.stack||error));
   });
