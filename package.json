@@ -1,6 +1,6 @@
 {
   "name": "rets-client",
-  "version": "3.2.5",
+  "version": "3.3.0",
   "description": "A RETS client (Real Estate Transaction Standard).",
   "main": "index.js",
   "dependencies": {
@@ -12,8 +12,11 @@
     "request": "^2.55.0",
     "stream-buffers": "~0.2.5",
     "through2": "^2.0.0",
-    "tough-cookie": "^0.13.0",
-    "winston": "~0.7.3"
+    "tough-cookie": "^0.13.0"
+  },
+  "devDependencies": {
+    "debug": "^2.2.0",
+    "request-debug": "^0.2.0"
   },
   "directories": {
     "lib": "./lib"

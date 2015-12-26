@@ -2,7 +2,6 @@
 ### jshint -W097 ###
 'use strict'
 
-logger = require('winston')
 Promise = require('bluebird')
 
 retsParsing = require('./retsParsing')
@@ -52,8 +51,6 @@ login = (retsSession) ->
 
 logout = (retsSession) ->
   retsHttp.callRetsMethod('logout', Promise.promisify(retsSession), {})
-  .then (result) ->
-    logger.debug 'Logout success'
 
 
 module.exports =

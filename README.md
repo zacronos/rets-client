@@ -5,6 +5,11 @@ A RETS (Real Estate Transaction Standard) client for Node.js.
 
 ## Changes
 
+#### 3.3.0
+
+Version 3.3 adds support for debugging via the [debug](https://github.com/visionmedia/debug) and
+[request-debug](https://github.com/request/request-debug) modules. See the [debugging section](#debugging).
+
 #### 3.2.2
 
 Version 3.2.2 adds support for per-object errors when calling `client.objects.getPhotos()`.  The
@@ -268,3 +273,13 @@ should match existing code style.
     });
   });
 ```
+
+##### Debugging
+You can turn on all debug logging by adding `rets-client:*` to your `DEBUG` environment variable, as per the
+[debug module](https://github.com/visionmedia/debug).  Sub-loggers available:
+* `rets-client:main`: basic logging of RETS call options and errors
+* `rets-client:request`: logging of HTTP request/response headers and other related info, with output almost identical
+to that provided by the [request-debug module](https://github.com/request/request-debug).
+
+If you want access to the request debugging data directly, you can use the `requestDebugFunction` client setting.  This
+function will be set up as a debug handler as per the [request-debug module](https://github.com/request/request-debug).

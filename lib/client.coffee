@@ -25,7 +25,11 @@ URL_KEYS =
 
 
 class Client
-  constructor: (@settings) ->
+  constructor: (_settings) ->
+    @settings = {}
+    for key, val of _settings
+      @settings[key] = val
+    
     @headers =
       'User-Agent': "Node-Rets/1.0"
       'RETS-Version': @settings.version || 'RETS/1.7.2'
@@ -40,6 +44,12 @@ class Client
         retsUaAuth = crypto.createHash('md5').update([a1, "", @settings.sessionId || "", @settings.version || headers['RETS-Version']].join(":")).digest('hex')
         @headers['RETS-UA-Authorization'] = "Digest " + retsUaAuth
 
+    debugRequest = require('debug')('rets-client:request')
+    if debugRequest.enabled
+      require('request-debug')(request, (type, data) -> debugRequest("#{type}:", data))
+    if 'requestDebugFunction' of @settings
+      require('request-debug')(request, @settings.requestDebugFunction)
+    
     defaults =
       jar: request.jar()
       headers: @headers

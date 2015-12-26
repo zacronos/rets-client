@@ -2,7 +2,6 @@
 ### jshint -W097 ###
 'use strict'
 
-logger = require('winston')
 streamBuffers = require('stream-buffers')
 Promise = require('bluebird')
 

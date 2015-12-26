@@ -2,7 +2,6 @@
 ### jshint -W097 ###
 'use strict'
 
-logger = require('winston')
 Promise = require('bluebird')
 through2 = require('through2')
 

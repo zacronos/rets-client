@@ -2,7 +2,6 @@
 ### jshint -W097 ###
 'use strict'
 
-logger = require('winston')
 MultipartParser = require('formidable/lib/multipart_parser').MultipartParser
 Stream = require('stream').Stream
 StringDecoder = require('string_decoder').StringDecoder
