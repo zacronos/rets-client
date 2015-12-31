@@ -1,12 +1,13 @@
 {
   "name": "rets-client",
-  "version": "3.3.0",
+  "version": "3.3.1",
   "description": "A RETS client (Real Estate Transaction Standard).",
   "main": "index.js",
   "dependencies": {
     "bluebird": "^2.9.25",
     "coffee-script": "^1.8.0",
     "crypto": "0.0.3",
+    "debug": "^2.2.0",
     "formidable": "~1.0.15",
     "node-expat": "^2.3.10",
     "request": "^2.55.0",
@@ -15,7 +16,6 @@
     "tough-cookie": "^0.13.0"
   },
   "devDependencies": {
-    "debug": "^2.2.0",
     "request-debug": "^0.2.0"
   },
   "directories": {
