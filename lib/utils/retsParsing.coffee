@@ -8,6 +8,7 @@ through2 = require('through2')
 errors = require('./errors')
 replyCodes = require('./replyCodes')
 hex2a = require('./hex2a')
+headersHelper = require('./headers')
 
 
 # Parsing as performed here and in the other modules of this project relies on some simplifying assumptions.  DO NOT
@@ -17,7 +18,7 @@ hex2a = require('./hex2a')
 
 
 # a parser with some basic common functionality, intended to be extended for real use
-getSimpleParser = (errCallback) ->
+getSimpleParser = (errCallback, headerInfo) ->
   result =
     currElementName: null
     parser: new expat.Parser('UTF-8')
@@ -28,7 +29,7 @@ getSimpleParser = (errCallback) ->
   result.parser.once 'startElement', (name, attrs) ->
     if name != 'RETS'
       result.finish()
-      return errCallback(new Error('Unexpected results. Please check the RETS URL.'))
+      errCallback(new Error('Unexpected results. Please check the RETS URL.'))
 
   result.parser.on 'startElement', (name, attrs) ->
     result.currElementName = name
@@ -37,7 +38,7 @@ getSimpleParser = (errCallback) ->
     result.status = attrs
     if attrs.ReplyCode != '0' && attrs.ReplyCode != '20208'
       result.finish()
-      return errCallback(new errors.RetsReplyError(attrs.ReplyCode, attrs.ReplyText))
+      errCallback(new errors.RetsReplyError(attrs.ReplyCode, attrs.ReplyText, headerInfo))
 
   result.parser.on 'error', (err) ->
     result.finish()
@@ -47,7 +48,7 @@ getSimpleParser = (errCallback) ->
     result.finish()
     errCallback(new Error("Unexpected end of xml stream."))
 
-  return result
+  result
 
 
 # parser that deals with column/data tags, as returned for metadata and search queries
@@ -67,6 +68,7 @@ getStreamParser = (metadataTag, rawData) ->
   dataText = null
   columns = null
   currElementName = null
+  headers = null
 
   parser = new expat.Parser('UTF-8')
   retsStream = through2.obj()
@@ -80,9 +82,12 @@ getStreamParser = (metadataTag, rawData) ->
     finish('error', err)
   writeOutput = (type, payload) ->
     retsStream.write(type: type, payload: payload)
+  response = (response) ->
+    headers = headersHelper.processHeaders(response.rawHeaders)
+    writeOutput('headerInfo', headers)
   processStatus = (attrs) ->
     if attrs.ReplyCode != '0' && attrs.ReplyCode != '20208'
-      return fail(new errors.RetsReplyError(attrs.ReplyCode, attrs.ReplyText))
+      return fail(new errors.RetsReplyError(attrs.ReplyCode, attrs.ReplyText, headers))
     status =
       replyCode: attrs.ReplyCode
       replyTag: replyCodes.tagMap[attrs.ReplyCode]
@@ -167,9 +172,7 @@ getStreamParser = (metadataTag, rawData) ->
     # we remove event listeners upon success, so getting here implies failure
     fail(new Error("Unexpected end of xml stream."))
   
-  parser: parser
-  fail: fail
-  retsStream: retsStream
+  { parser, fail, retsStream, response }
   
   
 module.exports =

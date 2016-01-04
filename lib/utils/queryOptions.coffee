@@ -4,17 +4,17 @@
 
 
 # need to make a new object as we merge, as we don't want to modify the user's object
-mergeOptions = (options1, options2) ->
-  if !options1
-    return options2
-  result = {}
+mergeOptions = (args...) ->
+  if args.length == 0
+    return {}
   
-  # copy in options2 first, letting values from options1 overwrite and have priority
-  for own key of options2
-    result[key] = options2[key]
-  for own key of options1
-    result[key] = options1[key]
-    
+  result = {}
+  # start at the end, so that values from earlier options objects overwrite and have priority
+  for index in [args.length-1..0]
+    options = args[index]
+    for own key of options
+      result[key] = options[key]
+  
   result
 
 

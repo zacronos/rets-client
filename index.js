@@ -2,8 +2,4 @@
 /* jshint -W097 */
 'use strict';
 
-
-var coffee = require('coffee-script');
-coffee.register();
-
-module.exports = require('./lib/api');
+module.exports = require('./dist/api');

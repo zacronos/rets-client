@@ -6,6 +6,7 @@ Promise = require('bluebird')
 
 retsParsing = require('./retsParsing')
 retsHttp = require('./retsHttp')
+headersHelper = require('./headers')
 
 
 ###
@@ -15,11 +16,12 @@ retsHttp = require('./retsHttp')
 login = (retsSession) ->
   retsHttp.callRetsMethod('login', Promise.promisify(retsSession), {})
   .then (retsResponse) -> new Promise (resolve, reject) ->
+    headers = headersHelper.processHeaders(retsResponse.response.rawHeaders)
     systemData =
-      retsVersion: retsResponse.response.headers['rets-version']
-      retsServer: retsResponse.response.headers.server
+      retsVersion: headers.retsVersion
+      retsServer: headers.server
     
-    retsParser = retsParsing.getSimpleParser(reject)
+    retsParser = retsParsing.getSimpleParser(reject, headers)
     
     gotData = false
     retsParser.parser.on 'text', (text) ->

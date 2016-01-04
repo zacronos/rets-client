@@ -5,6 +5,19 @@ A RETS (Real Estate Transaction Standard) client for Node.js.
 
 ## Changes
 
+#### 4.0.0
+
+Version 4.0!  This represents a substantial rewrite of the object-retrieval code, making it more robust and flexible,
+adding support for streaming object results, and allowing for additional query options (like `Location` and
+`ObjectData`).  See the simple photo query example at the end of the [Example RETS Session](#example-rets-session), and
+the [photo streaming example](#photo-streaming-example).
+
+Also new in version 4.0, just about every API call now gives access to header info from the RETS response.  For some
+queries, in particular object queries, headers are often used as a vehicle for important metadata about the response,
+so this is an important feature.  The exact mechanism varies depending on whether it a call that resolves to a stream
+(which now emits a `headerInfo` event) or a call that resolves to an object (which now has a `headerInfo` field).  Also,
+the RetsServerError and RetsReplyError objects now both contain a `headerInfo` field.
+
 #### 3.3.0
 
 Version 3.3 adds support for debugging via the [debug](https://github.com/visionmedia/debug) and
@@ -71,7 +84,6 @@ Issue tickets and pull requests are welcome.  Pull requests must be backward-com
 should match existing code style.
 
 #### TODO
-- create optional streaming interface for object downloads; when implemented, this will be a 4.0 release
 - create unit tests -- specifically ones that run off example RETS data rather than requiring access to a real RETS server
 
 
@@ -121,9 +133,12 @@ should match existing code style.
       loopFields = Object.keys(obj);
       excludeFields = [];
     }
-    for (var i=0; i<fields.length; i++) {
-      if (excludeFields.indexOf(fields[i]) == -1) {
-        console.log("    "+fields[i]+": "+obj[fields[i]]);
+    for (var i=0; i<loopFields.length; i++) {
+      if (excludeFields.indexOf(loopFields[i]) == -1) {
+      if (typeof(obj[field]) == 'object') {
+        console.log("    "+loopFields[i]+": "+JSON.stringify(obj[loopFields[i]]));
+      } else {
+        console.log("    "+loopFields[i]+": "+obj[loopFields[i]]);
       }
     }
     console.log("");
@@ -201,32 +216,28 @@ should match existing code style.
       }).then(function () {
       
         // get photos
-        return client.objects.getPhotos("Property", "LargePhoto", photoSourceId)
-      }).then(function (photoList) {
+        return client.objects.getAllObjects("Property", "LargePhoto", photoSourceId, {alwaysGroupObjects: true, ObjectData: '*'})
+      }).then(function (photoResults) {
         console.log("=================================");
         console.log("========  Photo Results  ========");
         console.log("=================================");
-        for (var i = 0; i < photoList.length; i++) {
-          if (photoList[i].error) {
-            var msg;
-            if (photoList[i].error instanceof rets.RetsReplyError) {
-              msg = "Photo " + (i + 1) + " had an error: " + photoList[i].error;
-            } else {
-              msg = "Parsing error encountered after photo " + i +
-                "; more photos may have been available.  Error: " + photoList[i].error;
-            }
-            console.log(msg);
+        for (var i = 0; i < photoResults.objects.length; i++) {
+          if (photoResults.objects[i].error) {
+            console.log("Photo " + (i + 1) + " had an error: " + photoResults.objects[i].error);
           } else {
-            console.log("Photo " + (i + 1) + " MIME type: " + photoList[i].mime);
+            console.log("Photo " + (i + 1) + ":");
+            outputFields(photoResults.objects[i].headerInfo);
             fs.writeFileSync(
-              "/tmp/photo" + (i + 1) + "." + photoList[i].mime.match(/\w+\/(\w+)/i)[1],
-              photoList[i].buffer
+              "/tmp/photo" + (i + 1) + "." + photoResults.objects[i].headerInfo.contentType.match(/\w+\/(\w+)/i)[1],
+              photoResults.objects[i].data
             );
           }
+          console.log("---------------------------------");
         }
       });
       
-  }).catch(function (error) {
+  }).catch(function (errorInfo) {
+    var error = errorInfo.error || errorInfo;
     console.log("ERROR: issue encountered: "+(error.stack||error));
   });
 ```
@@ -274,6 +285,42 @@ should match existing code style.
   });
 ```
 
+#### Photo streaming example
+```javascript
+  var rets = require('rets-client');
+  // establish connection to RETS server which auto-logs out when we're done
+  rets.getAutoLogoutClient(clientSettings, function (client) {
+    // getObjects will accept a single string, an array of strings, or an object as shown below
+    var photoIds = {
+      '11111': [1,3],  // get photos #1 and #3 for listingId 11111
+      '22222': '*',    // get all photos for listingId 22222
+      '33333': '0'     // get 'preferred' photo for listingId 33333
+    };
+    return client.objects.stream.getObjects('Property', 'Photo', photoIds, {alwaysGroupObjects: true, ObjectData: '*'})
+    .then(function (photoStream) {
+      return new Promise(function (resolve, reject) {
+        var i=0;
+        photoStream.on('data', function (photoEvent) {
+          i++;
+          if (photoEvent.error) {
+            console.log("Photo " + i + " had an error: " + photoEvent.error);
+          } else {
+            console.log("Photo " + (i + 1) + ":");
+            outputFields(photoResults.objects[i].headerInfo);
+            fileStream = fs.createWriteStream(
+              "/tmp/photo" + i + "." + photoEvent.headerInfo.contentType.match(/\w+\/(\w+)/i)[1]
+            );
+            photoEvent.dataStream.pipe(fileStream);
+          }
+        });
+        photoStream.on('end', function () {
+          resolve();
+        });
+      });
+    });
+  });
+```
+
 ##### Debugging
 You can turn on all debug logging by adding `rets-client:*` to your `DEBUG` environment variable, as per the
 [debug module](https://github.com/visionmedia/debug).  Sub-loggers available:
@@ -283,3 +330,7 @@ to that provided by the [request-debug module](https://github.com/request/reques
 
 If you want access to the request debugging data directly, you can use the `requestDebugFunction` client setting.  This
 function will be set up as a debug handler as per the [request-debug module](https://github.com/request/request-debug).
+
+In order to get either `rets-client:request` logging, or to use `requestDebugFunction`, you will need to ensure
+dev dependencies (in particular, request-debug) are installed for rets-client.  The easiest way to do this is to first
+change directory to the location of rets-client (e.g. `cd ./node_modules/rets-client`), and then run `npm install`.
