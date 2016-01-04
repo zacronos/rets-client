@@ -19,7 +19,7 @@ login = (retsSession) ->
       retsVersion: retsResponse.response.headers['rets-version']
       retsServer: retsResponse.response.headers.server
     
-    retsParser = retsParsing.getSimpleParser(reject)
+    retsParser = retsParsing.getSimpleParser(reject, retsResponse.response.headers)
     
     gotData = false
     retsParser.parser.on 'text', (text) ->

@@ -12,7 +12,7 @@ retsParsing = require('../utils/retsParsing')
 
 _getMetadataImpl = (retsSession, type, options) -> new Promise (resolve, reject) ->
   context = retsParsing.getStreamParser(type)
-  retsHttp.streamRetsMethod('getMetadata', retsSession, options, context.fail)
+  retsHttp.streamRetsMethod('getMetadata', retsSession, options, context.fail, context.response)
   .pipe(context.parser)
 
   result =
@@ -31,6 +31,8 @@ _getMetadataImpl = (retsSession, type, options) -> new Promise (resolve, reject)
         result.results.push(currEntry)
       when 'metadataEnd'
         currEntry.info.rowsReceived = event.payload
+      when 'headerInfo'
+        result.headerInfo = event.payload
       when 'status'
         for own key, value of event.payload
           result[key] = value
@@ -61,8 +63,6 @@ getMetadata = (type, id, format='COMPACT') -> Promise.try () =>
     Id: id
     Format: format
   retsHttp.callRetsMethod('getMetadata', @retsSession, options)
-  .then (result) ->
-    result.body
 
 
 ###
@@ -71,9 +71,9 @@ getMetadata = (type, id, format='COMPACT') -> Promise.try () =>
 
 getSystem = () ->
   @getMetadata('METADATA-SYSTEM')
-  .then (rawXml) -> new Promise (resolve, reject) ->
+  .then (xmlResponse) -> new Promise (resolve, reject) ->
     result = {}
-    retsParser = retsParsing.getSimpleParser(reject)
+    retsParser = retsParsing.getSimpleParser(reject, xmlResponse.headerInfo)
 
     gotMetaDataInfo = false
     gotSystemInfo = false
@@ -97,7 +97,7 @@ getSystem = () ->
       else
         resolve(result)
     
-    retsParser.parser.write(rawXml)
+    retsParser.parser.write(xmlResponse.body)
     retsParser.parser.end()
 
 

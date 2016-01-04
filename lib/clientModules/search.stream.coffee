@@ -23,14 +23,19 @@ retsParsing = require('../utils/retsParsing')
 #       standardNames:0,
 #       restrictedIndicator:'***',
 #       limit:"NONE"
+# @param headerInfoCallback optional callback to receive response header info
+#
 ###
 
-searchRets = (queryOptions) -> Promise.try () =>
+searchRets = (queryOptions, headerInfoCallback) -> Promise.try () =>
   finalQueryOptions = queryOptionHelpers.normalizeOptions(queryOptions)
   resultStream = through2()
-  httpStream = retsHttp.streamRetsMethod 'search', @retsSession, finalQueryOptions, (err) ->
+  onError = (err) ->
     httpStream.unpipe(resultStream)
     resultStream.emit('error', err)
+  if !headerInfoCallback
+    headerInfoCallback = () ->  # noop
+  httpStream = retsHttp.streamRetsMethod 'search', @retsSession, finalQueryOptions, onError, headerInfoCallback
   httpStream.pipe(resultStream)
 
 
@@ -68,10 +73,9 @@ query = (resourceType, classType, queryString, options={}, rawData=false) ->
   delete queryOptions.queryType
   delete queryOptions.format
   finalQueryOptions = queryOptionHelpers.normalizeOptions(queryOptions)
-  expectRows = "#{finalQueryOptions.count}" != "2"
 
-  context = retsParsing.getStreamParser(null, rawData, expectRows)
-  retsHttp.streamRetsMethod('search', @retsSession, finalQueryOptions, context.fail)
+  context = retsParsing.getStreamParser(null, rawData)
+  retsHttp.streamRetsMethod('search', @retsSession, finalQueryOptions, context.fail, context.response)
   .pipe(context.parser)
   
   context.retsStream

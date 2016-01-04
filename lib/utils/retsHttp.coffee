@@ -7,6 +7,7 @@ debug = require('debug')('rets-client:main')
 expat = require('node-expat')
 
 errors = require('./errors')
+headersHelper = require('./headers')
 
 
 callRetsMethod = (methodName, retsSession, queryOptions) ->
@@ -18,14 +19,15 @@ callRetsMethod = (methodName, retsSession, queryOptions) ->
     Promise.reject(error)
   .spread (response, body) ->
     if response.statusCode != 200
-      error = new errors.RetsServerError(methodName, response.statusCode, response.statusMessage)
+      error = new errors.RetsServerError(methodName, response.statusCode, response.statusMessage, response.headers)
       debug "RETS #{methodName} error: #{error.message}"
       return Promise.reject(error)
     body: body
     response: response
+    headerInfo: headersHelper.processHeaders(response.rawHeaders)
 
 
-streamRetsMethod = (methodName, retsSession, queryOptions, failCallback) ->
+streamRetsMethod = (methodName, retsSession, queryOptions, failCallback, responseCallback) ->
   debug("RETS #{methodName} (streaming)", queryOptions)
   done = false
   errorHandler = (error) ->
@@ -39,9 +41,11 @@ streamRetsMethod = (methodName, retsSession, queryOptions, failCallback) ->
       return
     done = true
     if response.statusCode != 200
-      error = new errors.RetsServerError('search', response.statusCode, response.statusMessage)
+      error = new errors.RetsServerError('search', response.statusCode, response.statusMessage, response.headers)
       debug "RETS #{methodName} error: #{error.message}"
       failCallback(error)
+    else if responseCallback
+      responseCallback(response)
   stream = retsSession(qs: queryOptions)
   stream.on 'error', errorHandler
   stream.on 'response', responseHandler

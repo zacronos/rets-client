@@ -2,107 +2,141 @@
 ### jshint -W097 ###
 'use strict'
 
-streamBuffers = require('stream-buffers')
+WritableStreamBuffer = require('stream-buffers').WritableStreamBuffer
 Promise = require('bluebird')
+through2 = require('through2')
 
 multipart = require('../utils/multipart')
 retsHttp = require('../utils/retsHttp')
+queryOptionHelpers = require('../utils/queryOptions')
 
 
-###
-# Retrieves RETS object data.
-#
-# @param resourceType Rets resource type (ex: Property)
-# @param objectType Rets object type (ex: LargePhoto)
-# @param objectId Object identifier
-#
-# resolves to an object with the following fields:
-#   contentType
-#   data (buffer)
-#   response (http response object)
-###
-
-getObject = (resourceType, objectType, objectId) ->
-  if !resourceType
-    throw new Error('Resource type id is required')
-  if !objectType
-    throw new Error('Object type id is required')
-  if !objectId
-    throw new Error('Object id is required')
-  options =
-    Type: objectType
-    ID: objectId
-    Resource: resourceType
-  
-  # prepare stream buffer for object data
-  writableStreamBuffer = new (streamBuffers.WritableStreamBuffer)(
-    initialSize: 100 * 1024
-    incrementAmount: 10 * 1024)
-  
-  #pipe object data to stream buffer
-  new Promise (resolve, reject) =>
-    contentType = null
-    response = null
-    done = false
-    fail = (error) ->
-      if done
-        return
-      done = true
-      reject(error)
-    req = retsHttp.streamRetsMethod('getObject', @retsSession, options, fail)
-    req.on('error', fail)
-    req.on 'response', (_response) ->
-      response = _response
-      contentType = _response.headers['content-type']
-    req.on 'end', () ->
+_loadStreams = (result) -> new Promise (resolve, reject) ->
+  done = false
+  if result.dataStream?
+    dataLoader = new WritableStreamBuffer
+      initialSize: 100 * 1024
+      incrementAmount: 10 * 1024
+    result.dataStream.on 'end', () ->
       if done
         return
       done = true
       resolve
-        contentType: contentType
-        data: writableStreamBuffer.getContents()
-        response: response
-    req.pipe(writableStreamBuffer)
+        headerInfo: result.headerInfo
+        data: dataLoader.getContents()
+    result.dataStream.on 'error', (err) ->
+      if done
+        return
+      done = true
+      reject
+        headerInfo: result.headerInfo
+        error: err
+    result.dataStream.pipe(dataLoader)
+  else if result.objectStream?
+    list = []
+    started = 0
+    finished = 0
+    maybeResolve = () ->
+      if done && started == finished
+        resolve
+          headerInfo: result.headerInfo
+          objects: list
+    objectLoader = through2.obj (object, encoding, callback) ->
+      index = started
+      started++
+      _loadStreams(object)
+      .then (result) ->
+        list[index] = result
+      .catch (err) ->
+        list[index] = err
+      .then () ->
+        finished++
+        maybeResolve()
+      callback()
+    result.objectStream.on 'end', () ->
+      done = true
+      maybeResolve()
+    result.objectStream.pipe(objectLoader)
+  else
+    resolve(result)
 
 
 ###
-# Helper that retrieves a list of photo objects.
+# All methods below take the following parameters:
+#    resourceType: resource type (RETS Resource argument, ex: Property)
+#    objectType: object type (RETS Type argument, ex: Photo)
+#    ids: the ids of the objects to query, corresponding to the RETS ID argument; you really should know the RETS
+#       standard to fully understand every possibility here.  (See the individual method descriptions below.)  Can be
+#       one of 3 data types:
+#       1. string: will use this literal value as the ID argument
+#       2. array: will be joined with commas, then used as the ID argument
+#       3. object: (valid for getObjects only) keys will be joined to values with a colon, and if a value is an array
+#           it will be joined with colons
+#    options: object of additional options.
+#       Location: can be 0 (default) or 1; a 1 value requests URLs be returned instead of actual image data, but the
+#           RETS server may ignore this
+#       ObjectData: can be null (default), a string to be used directly as the ObjectData argument, or an array of
+#           values to be joined with commas.  Requests that the server sets headers containing additional metadata
+#           about the object(s) in the response.  The special value '*' requests all available metadata.  Any headers
+#           set based on this argument will be parsed into a special object and set as the field 'objectData' in the
+#           headerInfo object.
+#       alwaysGroupObjects: can be false (default) or true.  If true, all of the methods below will return a result
+#           formatted as if a multipart response was received, even if a request only returns a single result.  If you
+#           will sometimes get multiple results back from a single query, this will simplify your code by making the
+#           results more consistent.  However, if you know you are only making requests that return a single result,
+#           it is probably more intuitive to leave this false/unset.
 #
-# @param resourceType Rets resource type (ex: Property)
-# @param photoType Photo object type, based on getObjects meta call (ex: LargePhoto, Photo)
-# @param matrixId Photo source identifier (listing id, agent id, etc).
-#
-# Each item in resolved data list is an object with the following data elements:
-#   contentId: <photo source identifier, i.e. resource-entity-id>
-#   objectId: <identifier for this photo within the resource>
-#   buffer: <data buffer>, or <null> if there was an error affecting only that photo/object
-#   error: <null>, or <an Error instance> if there was an error affecting only that photo/object
-#   mime: <data buffer mime type>,
-#   ...: other elements may be provided as well if sent by the server, such as contentDescription, dispositionType, etc
-#
-#   NOTE: if an item in the list has an error field set to an instance of RetsReplyError, then the error only applies
-#   to that one photo.  However, if a generic Error is found in the last object of the array, then it is most likely a
-#   multipart parse error, which means there may have been more photos in the response which could not be parsed;
-#   buffers from the list prior to the error should be correct, but in this case you can't rely on the length of the
-#   array to tell you how many photos there should have been.
+# Depending on the form of the response from the RETS server, all methods below will resolve or reject as follows:
+# 1. If the HTTP response is not a 200/OK message, all methods will reject with a RetsServerError.
+# 2. If the HTTP response is a 200/OK message, but the contentType is text/xml, all methods will reject with a
+#    RetsReplyError.
+# 3. If the HTTP response is a 200/OK message with a non-multipart contentType, and if the alwaysGroupObjects option is
+#    not set, then the response is treated as a single-object response, and all methods will resolve to an object with
+#    the following fields:
+#       headerInfo: an object of metadata from the headers of the response
+#       data: a buffer containing the object's data
+# 4. If the HTTP response is a 200/OK message with a multipart contentType, or if the alwaysGroupObjects option is set,
+#    then all methods will resolve to an object with the following fields:
+#       headerInfo: an object of metadata from the headers of the main response
+#       objects: an array of objects corresponding to the parts of the response; each object will have its own
+            headerInfo field for the headers on its part, and either an error field or a data field.
 ###
 
-getPhotos = (resourceType, photoType, matrixId) ->
-  @getObject(resourceType, photoType, matrixId + ':*')
-  .then (result) ->
-    multipartBoundary = result.contentType.match(/boundary="[^"]+"/ig)?[0].slice('boundary="'.length, -1)
-    if !multipartBoundary
-      multipartBoundary = result.contentType.match(/boundary=[^;]+/ig)?[0].slice('boundary='.length)
-    if !multipartBoundary
-      throw new Error('Could not find multipart boundary')
-    multipart.parseMultipart(new Buffer(result.data), multipartBoundary)
-    .catch (err) ->
-      throw new Error("Error parsing multipart data: #{err}")
+
+###
+# getObjects: Use this if you need to specify exactly what images/objects to retrieve.  `ids` can be a single string,
+#     an array, or an object.  This is the only method that lets you specify object UIDs instead of resourceIds.
+###
+  
+getObjects = (resourceType, objectType, ids, options) ->
+  @stream.getObjects(resourceType, objectType, ids, options)
+  .then _loadStreams
+
+  
+###
+# getAllObjects: Use this if you want to get all associated images/objects for all resources (i.e. listingIds or
+#     agentIds) specified.  `ids` can be a single string or an array; a ':*' suffix is appended to each id.
+###
+  
+getAllObjects = (resourceType, objectType, ids, options) ->
+  @stream.getAllObjects(resourceType, objectType, ids, options)
+  .then _loadStreams
+
+###
+# getPreferredObjects: Use this if you want to get a single 'preferred' image/object for each resource (i.e. listingId
+#     or agentIds) specified.  `ids` can be a single string or an array; a ':0' suffix is appended to each id.  
+###
+  
+getPreferredObjects = (resourceType, objectType, ids, options) ->
+  @stream.getPreferredObjects(resourceType, objectType, ids, options)
+  .then _loadStreams
 
 
 module.exports = (_retsSession) ->
   if !_retsSession
     throw new Error('System data not set; invoke login().')
   retsSession: _retsSession
-  getObject: getObject
-  getPhotos: getPhotos
+  getObjects: getObjects
+  getAllObjects: getAllObjects
+  getPreferredObjects: getPreferredObjects
+  stream: require('./object.stream')(_retsSession)
