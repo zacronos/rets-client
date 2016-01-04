@@ -19,7 +19,7 @@ callRetsMethod = (methodName, retsSession, queryOptions) ->
     Promise.reject(error)
   .spread (response, body) ->
     if response.statusCode != 200
-      error = new errors.RetsServerError(methodName, response.statusCode, response.statusMessage, response.headers)
+      error = new errors.RetsServerError(methodName, response.statusCode, response.statusMessage, response.rawHeaders)
       debug "RETS #{methodName} error: #{error.message}"
       return Promise.reject(error)
     body: body
@@ -41,7 +41,7 @@ streamRetsMethod = (methodName, retsSession, queryOptions, failCallback, respons
       return
     done = true
     if response.statusCode != 200
-      error = new errors.RetsServerError('search', response.statusCode, response.statusMessage, response.headers)
+      error = new errors.RetsServerError('search', response.statusCode, response.statusMessage, response.rawHeaders)
       debug "RETS #{methodName} error: #{error.message}"
       failCallback(error)
     else if responseCallback
