@@ -41,7 +41,7 @@ class Client
       # add RETS-UA-Authorization header
       if @settings.userAgentPassword
         a1 = crypto.createHash('md5').update([@settings.userAgent, @settings.userAgentPassword].join(":")).digest('hex')
-        retsUaAuth = crypto.createHash('md5').update([a1, "", @settings.sessionId || "", @settings.version || headers['RETS-Version']].join(":")).digest('hex')
+        retsUaAuth = crypto.createHash('md5').update([a1, "", @settings.sessionId || "", @settings.version || @headers['RETS-Version']].join(":")).digest('hex')
         @headers['RETS-UA-Authorization'] = "Digest " + retsUaAuth
 
     debugRequest = require('debug')('rets-client:request')
