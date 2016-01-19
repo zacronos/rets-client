@@ -60,7 +60,7 @@ getMetadata = (type, id, format='COMPACT') -> Promise.try () =>
     throw new Error('Resource type id is required (or for some types of metadata, "0" retrieves for all resource types)')
   options =
     Type: type
-    Id: id
+    ID: id
     Format: format
   retsHttp.callRetsMethod('getMetadata', @retsSession, options)
 
@@ -112,7 +112,7 @@ module.exports = (_retsSession) ->
         throw new Error('Resource type id is required (or for some types of metadata, "0" retrieves for all resource types)')
       options =
         Type: type
-        Id: if classType then "#{id}:#{classType}" else id
+        ID: if classType then "#{id}:#{classType}" else id
         Format: format
       _getMetadataImpl(_retsSession, type, options)
   
