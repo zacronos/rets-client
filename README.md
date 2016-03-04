@@ -134,7 +134,9 @@ should match existing code style.
       excludeFields = [];
     }
     for (var i=0; i<loopFields.length; i++) {
-      if (excludeFields.indexOf(loopFields[i]) == -1) {
+      if (excludeFields.indexOf(loopFields[i]) != -1) {
+        continue;
+      }
       if (typeof(obj[field]) == 'object') {
         console.log("    "+loopFields[i]+": "+JSON.stringify(obj[loopFields[i]]));
       } else {
@@ -229,8 +231,7 @@ should match existing code style.
             outputFields(photoResults.objects[i].headerInfo);
             fs.writeFileSync(
               "/tmp/photo" + (i + 1) + "." + photoResults.objects[i].headerInfo.contentType.match(/\w+\/(\w+)/i)[1],
-              photoResults.objects[i].data
-            );
+              photoResults.objects[i].data);
           }
           console.log("---------------------------------");
         }
@@ -308,8 +309,7 @@ should match existing code style.
             console.log("Photo " + (i + 1) + ":");
             outputFields(photoResults.objects[i].headerInfo);
             fileStream = fs.createWriteStream(
-              "/tmp/photo" + i + "." + photoEvent.headerInfo.contentType.match(/\w+\/(\w+)/i)[1]
-            );
+              "/tmp/photo" + i + "." + photoEvent.headerInfo.contentType.match(/\w+\/(\w+)/i)[1]);
             photoEvent.dataStream.pipe(fileStream);
           }
         });
