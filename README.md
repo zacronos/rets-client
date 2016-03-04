@@ -137,7 +137,7 @@ should match existing code style.
       if (excludeFields.indexOf(loopFields[i]) != -1) {
         continue;
       }
-      if (typeof(obj[field]) == 'object') {
+      if (typeof(obj[loopFields[i]]) == 'object') {
         console.log("    "+loopFields[i]+": "+JSON.stringify(obj[loopFields[i]]));
       } else {
         console.log("    "+loopFields[i]+": "+obj[loopFields[i]]);
