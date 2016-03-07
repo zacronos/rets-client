@@ -53,6 +53,11 @@ class Client
     defaults =
       jar: request.jar()
       headers: @headers
+      
+    if @settings.method
+      defaults.method = @settings.method
+    else
+      defaults.method = 'GET'
 
     if @settings.username && @settings.password
       defaults.auth =
