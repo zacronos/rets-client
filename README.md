@@ -208,18 +208,32 @@ should match existing code style.
   var rets = require('rets-client');
   var through2 = require('through2');
   var Promise = require('bluebird');
+  
+  // this function doesn't do much, it's just a placeholder for whatever you want to do with the results 
+  var doAsyncProcessing = function (row, index, callback) {
+    console.log("-------- Result " + index + " --------");
+    outputFields(row);
+    // must be sure callback is called when this is done
+    callback();
+  }
+  
   // establish connection to RETS server which auto-logs out when we're done
   rets.getAutoLogoutClient(clientSettings, function (client) {
     // in order to have the auto-logout function work properly, we need to make a promise that either rejects or
     // resolves only once we're done processing the stream
     return new Promise(function (resolve, reject) {
+      console.log("====================================");
+      console.log("========  Streamed Results  ========");
+      console.log("====================================");
+      var count = 0;
       var retsStream = client.search.stream.query("OpenHouse", "OPENHOUSE", "(OpenHouseType=PUBLIC),(ActiveYN=1)", {limit:100, offset:10});
       var processorStream = through2.obj(function (event, encoding, callback) {
         switch (event.type) {
           case 'data':
             // event.payload is an object representing a single row of results
             // make sure callback is called only when all processing is complete
-            doAsyncProcessing(event.payload, callback);
+            count++;
+            doAsyncProcessing(event.payload, count, callback);
             break;
           case 'done':
             // event.payload is an object containing a count of rows actually received, plus some other things
