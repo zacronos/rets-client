@@ -68,11 +68,9 @@ should match existing code style.
 ...
 ```
 
-#### Example RETS Session
+##### Output helper used in many examples below
+
 ```javascript
-  var rets = require('rets-client');
-  var fs = require('fs');
-  var photoSourceId = '12345'; // <--- dummy example ID!  this will usually be a MLS number / listing id
   var outputFields = function(obj, opts) {
     if (!opts) opts = {};
     
@@ -100,6 +98,13 @@ should match existing code style.
     }
     console.log("");
   };
+```
+
+#### Example RETS Session
+```javascript
+  var rets = require('rets-client');
+  var fs = require('fs');
+  var photoSourceId = '12345'; // <--- dummy example ID!  this will usually be a MLS number / listing id
   
   // establish connection to RETS server which auto-logs out when we're done
   rets.getAutoLogoutClient(clientSettings, function (client) {
@@ -207,7 +212,7 @@ should match existing code style.
   rets.getAutoLogoutClient(clientSettings, function (client) {
     // in order to have the auto-logout function work properly, we need to make a promise that either rejects or
     // resolves only once we're done processing the stream
-    return new Promise(function (reject, resolve) {
+    return new Promise(function (resolve, reject) {
       var retsStream = client.search.stream.query("OpenHouse", "OPENHOUSE", "(OpenHouseType=PUBLIC),(ActiveYN=1)", {limit:100, offset:10});
       var processorStream = through2.obj(function (event, encoding, callback) {
         switch (event.type) {
@@ -256,19 +261,19 @@ should match existing code style.
     .then(function (photoStream) {
       return new Promise(function (resolve, reject) {
         var i=0;
-        photoStream.on('data', function (photoEvent) {
+        photoStream.objectStream.on('data', function (photoEvent) {
           i++;
           if (photoEvent.error) {
             console.log("Photo " + i + " had an error: " + photoEvent.error);
           } else {
             console.log("Photo " + (i + 1) + ":");
-            outputFields(photoResults.objects[i].headerInfo);
+            outputFields(photoEvent.headerInfo);
             fileStream = fs.createWriteStream(
               "/tmp/photo" + i + "." + photoEvent.headerInfo.contentType.match(/\w+\/(\w+)/i)[1]);
             photoEvent.dataStream.pipe(fileStream);
           }
         });
-        photoStream.on('end', function () {
+        photoStream.objectStream.on('end', function () {
           resolve();
         });
       });
