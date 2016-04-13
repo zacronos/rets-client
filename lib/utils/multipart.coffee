@@ -21,6 +21,7 @@ getObjectStream = (headerInfo, stream, handler) -> new Promise (resolve, reject)
   
   parser = new MultipartParser()
   objectStream = through2.obj()
+  objectStreamDone = false
   headerField = ''
   headerValue = ''
   headers = []
@@ -30,17 +31,22 @@ getObjectStream = (headerInfo, stream, handler) -> new Promise (resolve, reject)
   partDone = false
   flushed = false
   
+  objectStream.on 'end', () ->
+    objectStreamDone = true
+  
   handleError = (err) ->
     if bodyStream
       bodyStream.emit('error', err)
       bodyStream.end()
       bodyStream = null
+    if objectStreamDone
+      return
     if !err.error || !err.headerInfo
       err = {error: err}
     objectStream.write(err)
   
   handleEnd = () ->
-    if done && partDone && flushed
+    if done && partDone && flushed && !objectStreamDone
       objectStream.end()
 
   parser.onPartBegin = () ->
@@ -66,17 +72,23 @@ getObjectStream = (headerInfo, stream, handler) -> new Promise (resolve, reject)
 
   parser.onHeadersEnd = () ->
     bodyStream = through2()
+    bodyStreamDone = false
+    bodyStream.on 'end', () ->
+      bodyStreamDone = true
     handler(headers, bodyStream)
     .then (object) ->
-      objectStream.write(object)
+      if !objectStreamDone
+        objectStream.write(object)
     .catch handleError
     .then () ->
       partDone = true
       handleEnd()
     parser.onPartData = (b, start, end) ->
-      bodyStream.write(b.slice(start, end))
+      if !bodyStreamDone
+        bodyStream.write(b.slice(start, end))
     parser.onPartEnd = () ->
-      bodyStream.end()
+      if !bodyStreamDone
+        bodyStream.end()
       bodyStream = null
 
   parser.onEnd = () ->
