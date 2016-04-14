@@ -295,6 +295,12 @@ should match existing code style.
   });
 ```
 
+##### Errors
+There are 3 error classes exposed by this module:
+* `RetsServerError`: Used when the HTTP response indicates an error, such as a "401 Unauthorized" response
+* `RetsReplyError`: Used when the HTTP response is valid, but the XML RETS response indicates an error
+* `RetsError`: A parent class for the two above, to make it more convenient to catch errors of either type
+
 ##### Debugging
 You can turn on all debug logging by adding `rets-client:*` to your `DEBUG` environment variable, as per the
 [debug module](https://github.com/visionmedia/debug).  Sub-loggers available:

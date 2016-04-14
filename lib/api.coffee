@@ -23,6 +23,7 @@ errors = require('./utils/errors')
 ###
 
 module.exports =
+  RetsError: errors.RetsError
   RetsReplyError: errors.RetsReplyError
   RetsServerError: errors.RetsServerError
   Client: Client

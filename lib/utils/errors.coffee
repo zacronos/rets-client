@@ -6,7 +6,10 @@ replyCodes = require('./replyCodes')
 headersHelper = require('./headers')
 
 
-class RetsReplyError extends Error
+class RetsError extends Error
+
+  
+class RetsReplyError extends RetsError
   constructor: (@replyCode, @replyText, _headerInfo) ->
     @name = 'RetsReplyError'
     @replyTag = if replyCodes.tagMap[@replyCode]? then replyCodes.tagMap[@replyCode] else 'unknown reply code'
@@ -16,7 +19,7 @@ class RetsReplyError extends Error
   
 
 
-class RetsServerError extends Error
+class RetsServerError extends RetsError
   constructor: (@retsMethod, @httpStatus, @httpStatusMessage, _headerInfo) ->
     @name = 'RetsServerError'
     @message = "Error while attempting #{@retsMethod} - HTTP Status #{@httpStatus} returned (#{@httpStatusMessage})"
@@ -24,6 +27,8 @@ class RetsServerError extends Error
     Error.captureStackTrace(this, RetsServerError)
 
 
-module.exports =
-  RetsReplyError: RetsReplyError
-  RetsServerError: RetsServerError
+module.exports = {
+  RetsError
+  RetsReplyError
+  RetsServerError
+}
