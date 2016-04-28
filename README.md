@@ -159,7 +159,7 @@ should match existing code style.
         return plucked;
       }).then(function (fields) {
       
-        //perform a query using DQML2 -- pass resource, class, and query, and options
+        //perform a query using DMQL2 -- pass resource, class, and query, and options
         return client.search.query("OpenHouse", "OPENHOUSE", "(OpenHouseType=PUBLIC),(ActiveYN=1)", {limit:100, offset:10})
         .then(function (searchData) {
           console.log("===========================================");
