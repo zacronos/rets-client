@@ -7,6 +7,7 @@ Promise = require('bluebird')
 through2 = require('through2')
 
 retsParsing = require('./retsParsing')
+errors = require('./errors')
 
 
 # Multipart parser derived from formidable library. See https://github.com/felixge/node-formidable
@@ -17,7 +18,7 @@ getObjectStream = (headerInfo, stream, handler) -> new Promise (resolve, reject)
   if !multipartBoundary
     multipartBoundary = headerInfo.contentType.match(/boundary=[^;]+/ig)?[0].slice('boundary='.length)
   if !multipartBoundary
-    throw new Error('Could not find multipart boundary')
+    throw new errors.RetsProcessingError('getObject', 'Could not find multipart boundary', headerInfo)
   
   parser = new MultipartParser()
   objectStream = through2.obj()
@@ -79,7 +80,8 @@ getObjectStream = (headerInfo, stream, handler) -> new Promise (resolve, reject)
     .then (object) ->
       if !objectStreamDone
         objectStream.write(object)
-    .catch handleError
+    .catch (err) ->
+      handleError(errors.ensureRetsError('getObject', err, headers))
     .then () ->
       partDone = true
       handleEnd()
@@ -106,7 +108,7 @@ getObjectStream = (headerInfo, stream, handler) -> new Promise (resolve, reject)
   flush = (callback) ->
     err = parser.end()
     if err
-      handleError(new Error("Unexpected end of data: #{err}"))
+      handleError(new errors.RetsProcessingError('getObject', "Unexpected end of data: #{errors.getErrorMessage(err)}", headerInfo))
     flushed = true
     handleEnd()
   stream.pipe(through2(interceptor, flush))

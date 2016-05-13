@@ -12,6 +12,7 @@ retsParsing = require('../utils/retsParsing')
 queryOptionHelpers = require('../utils/queryOptions')
 multipart = require('../utils/multipart')
 headersHelper = require('../utils/headers')
+errors = require('../utils/errors')
 
 
 _insensitiveStartsWith = (str, prefix) ->
@@ -19,17 +20,17 @@ _insensitiveStartsWith = (str, prefix) ->
 
 _processBody = (headers, bodyStream, preDecoded) -> new Promise (resolve, reject) ->
   headerInfo = headersHelper.processHeaders(headers)
+  onError = (error) ->
+    reject(errors.ensureRetsError('getObject', error, headerInfo))
   if _insensitiveStartsWith(headerInfo.contentType, 'text/xml')
-    onError = (error) ->
-      reject {headerInfo, error}
-    retsParser = retsParsing.getSimpleParser(onError, headerInfo)
+    retsParser = retsParsing.getSimpleParser('getObject', onError, headerInfo)
     bodyStream.pipe(retsParser.parser)
   else if _insensitiveStartsWith(headerInfo.contentType, 'multipart')
     multipart.getObjectStream(headerInfo, bodyStream, _processBody)
     .then (objectStream) ->
       resolve {headerInfo, objectStream}
     .catch (error) ->
-      reject {headerInfo, error}
+      onError(error)
   else
     if preDecoded || headerInfo.transferEncoding in ['binary', '7bit', '8bit', undefined]
       resolve
@@ -38,14 +39,14 @@ _processBody = (headers, bodyStream, preDecoded) -> new Promise (resolve, reject
     else if headerInfo.transferEncoding == 'base64'
       b64 = base64.decode()
       bodyStream.on 'error', (err) ->
-        b64.emit('error', err)
+        b64.emit('error', errors.ensureRetsError('getObject', err, headerInfo))
       resolve
         headerInfo: headerInfo
         dataStream: bodyStream.pipe(b64)
     else
       resolve
         headerInfo: headerInfo
-        error: new Error("unknown transfer encoding: #{JSON.stringify(headerInfo.transferEncoding)}")
+        error: new errors.RetsProcessingError('getObject', "unknown transfer encoding: #{JSON.stringify(headerInfo.transferEncoding)}", headerInfo)
 
 _annotateIds = (ids, suffix) ->
   if typeof(ids) == 'string'
@@ -106,11 +107,11 @@ _annotateIds = (ids, suffix) ->
 
 getObjects = (resourceType, objectType, ids, _options={}) -> Promise.try () =>
   if !resourceType
-    throw new Error('Resource type id is required')
+    throw new errors.RetsParamError('Resource type id is required')
   if !objectType
-    throw new Error('Object type id is required')
+    throw new errors.RetsParamError('Object type id is required')
   if !ids
-    throw new Error('Ids are required')
+    throw new errors.RetsParamError('Ids are required')
 
   idString = ''
   if typeof(ids) == 'string'
@@ -147,14 +148,18 @@ getObjects = (resourceType, objectType, ids, _options={}) -> Promise.try () =>
       if done
         return
       done = true
-      reject(error)
+      return reject(errors.ensureRetsError('getObject', error))
     req = retsHttp.streamRetsMethod('getObject', @retsSession, options, fail)
     req.on('error', fail)
     req.on 'response', (response) ->
       if done
         return
       done = true
-      resolve(_processBody(response.rawHeaders, bodyStream, true))
+      _processBody(response.rawHeaders, bodyStream, true)
+      .then (result) ->
+        resolve(result)
+      .catch (error) ->
+        fail(error)
     bodyStream = req.pipe(through2())
   .then (result) ->
     if result.objectStream || !alwaysGroupObjects
@@ -187,7 +192,7 @@ getPreferredObjects = (resourceType, objectType, ids, options) ->
 
 module.exports = (_retsSession) ->
   if !_retsSession
-    throw new Error('System data not set; invoke login().')
+    throw new errors.RetsParamError('System data not set; invoke login().')
   retsSession: _retsSession
   getObjects: getObjects
   getAllObjects: getAllObjects

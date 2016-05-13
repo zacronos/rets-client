@@ -7,6 +7,7 @@ through2 = require('through2')
 queryOptionHelpers = require('../utils/queryOptions')
 retsHttp = require('../utils/retsHttp')
 retsParsing = require('../utils/retsParsing')
+errors = require('../utils/errors')
 
 
 ###
@@ -74,7 +75,7 @@ query = (resourceType, classType, queryString, options={}, rawData=false) ->
   delete queryOptions.format
   finalQueryOptions = queryOptionHelpers.normalizeOptions(queryOptions)
 
-  context = retsParsing.getStreamParser(null, rawData)
+  context = retsParsing.getStreamParser('search', null, rawData)
   retsHttp.streamRetsMethod('search', @retsSession, finalQueryOptions, context.fail, context.response)
   .pipe(context.parser)
   
@@ -83,7 +84,7 @@ query = (resourceType, classType, queryString, options={}, rawData=false) ->
 
 module.exports = (_retsSession) ->
   if !_retsSession
-    throw new Error('System data not set; invoke login().')
+    throw new errors.RetsParamError('System data not set; invoke login().')
   retsSession: _retsSession
   query: query
   searchRets: searchRets

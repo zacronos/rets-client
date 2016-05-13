@@ -11,6 +11,7 @@ hex2a = require('../utils/hex2a')
 replyCodes = require('../utils/replyCodes')
 retsParsing = require('../utils/retsParsing')
 retsHttp = require('../utils/retsHttp')
+errors = require('../utils/errors')
 
 
 ###
@@ -85,7 +86,7 @@ query = (resourceType, classType, queryString, options={}) -> new Promise (resol
 
 module.exports = (_retsSession) ->
   if !_retsSession
-    throw new Error('System data not set; invoke login().')
+    throw new errors.RetsParamError('System data not set; invoke login().')
   retsSession: Promise.promisify(_retsSession)
   searchRets: searchRets
   query: query

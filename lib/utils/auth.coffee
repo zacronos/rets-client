@@ -7,6 +7,7 @@ Promise = require('bluebird')
 retsParsing = require('./retsParsing')
 retsHttp = require('./retsHttp')
 headersHelper = require('./headers')
+errors = require('./errors')
 
 
 ###
@@ -21,7 +22,7 @@ login = (retsSession) ->
       retsVersion: headers.retsVersion
       retsServer: headers.server
     
-    retsParser = retsParsing.getSimpleParser(reject, headers)
+    retsParser = retsParsing.getSimpleParser('login', reject, headers)
     
     gotData = false
     retsParser.parser.on 'text', (text) ->
@@ -39,7 +40,7 @@ login = (retsSession) ->
         return
       retsParser.finish()
       if !gotData
-        reject(new Error('Failed to parse data'))
+        reject(new errors.RetsProcessingError('login', 'Failed to parse data', headers))
       else
         resolve(systemData)
 

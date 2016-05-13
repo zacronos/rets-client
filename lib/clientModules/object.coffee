@@ -9,6 +9,7 @@ through2 = require('through2')
 multipart = require('../utils/multipart')
 retsHttp = require('../utils/retsHttp')
 queryOptionHelpers = require('../utils/queryOptions')
+errors = require('../utils/errors')
 
 
 _loadStreams = (result) -> new Promise (resolve, reject) ->
@@ -134,7 +135,7 @@ getPreferredObjects = (resourceType, objectType, ids, options) ->
 
 module.exports = (_retsSession) ->
   if !_retsSession
-    throw new Error('System data not set; invoke login().')
+    throw new errors.RetsParamError('System data not set; invoke login().')
   retsSession: _retsSession
   getObjects: getObjects
   getAllObjects: getAllObjects

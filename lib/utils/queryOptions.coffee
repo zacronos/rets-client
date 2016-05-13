@@ -3,6 +3,9 @@
 'use strict'
 
 
+errors = require('./errors')
+
+
 # need to make a new object as we merge, as we don't want to modify the user's object
 mergeOptions = (args...) ->
   if args.length == 0
@@ -30,13 +33,13 @@ _queryOptionsDefaults =
 
 normalizeOptions = (queryOptions) ->
   if !queryOptions
-    throw new Error('queryOptions is required.')
+    throw errors.RetsParamError('search', 'queryOptions is required.')
   if !queryOptions.searchType
-    throw new Error('searchType is required (ex: Property')
+    throw errors.RetsProcessingError('search', 'searchType is required (ex: Property')
   if !queryOptions.class
-    throw new Error('class is required (ex: RESI)')
+    throw errors.RetsProcessingError('search', 'class is required (ex: RESI)')
   if !queryOptions.query
-    throw new Error('query is required (ex: (MatrixModifiedDT=2014-01-01T00:00:00.000+) )')
+    throw errors.RetsProcessingError('search', 'query is required (ex: (MatrixModifiedDT=2014-01-01T00:00:00.000+) )')
   mergeOptions(queryOptions, _queryOptionsDefaults)
 
 

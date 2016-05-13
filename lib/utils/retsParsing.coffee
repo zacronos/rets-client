@@ -18,7 +18,7 @@ headersHelper = require('./headers')
 
 
 # a parser with some basic common functionality, intended to be extended for real use
-getSimpleParser = (errCallback, headerInfo) ->
+getSimpleParser = (retsMethod, errCallback, headerInfo) ->
   result =
     currElementName: null
     parser: new expat.Parser('UTF-8')
@@ -29,7 +29,7 @@ getSimpleParser = (errCallback, headerInfo) ->
   result.parser.once 'startElement', (name, attrs) ->
     if name != 'RETS'
       result.finish()
-      errCallback(new Error('Unexpected results. Please check the RETS URL.'))
+      errCallback(new errors.RetsProcessingError(retsMethod, 'Unexpected results. Please check the RETS URL.', headerInfo))
 
   result.parser.on 'startElement', (name, attrs) ->
     result.currElementName = name
@@ -38,21 +38,21 @@ getSimpleParser = (errCallback, headerInfo) ->
     result.status = attrs
     if attrs.ReplyCode != '0' && attrs.ReplyCode != '20208'
       result.finish()
-      errCallback(new errors.RetsReplyError(attrs.ReplyCode, attrs.ReplyText, headerInfo))
+      errCallback(new errors.RetsReplyError(retsMethod, attrs.ReplyCode, attrs.ReplyText, headerInfo))
 
   result.parser.on 'error', (err) ->
     result.finish()
-    errCallback(new Error("XML parsing error: #{err}"))
+    errCallback(new errors.RetsProcessingError(retsMethod, "XML parsing error: #{errors.getErrorMessage(err)}", headerInfo))
 
   result.parser.on 'end', () ->
     result.finish()
-    errCallback(new Error("Unexpected end of xml stream."))
+    errCallback(new errors.RetsProcessingError(retsMethod, "Unexpected end of xml stream.", headerInfo))
 
   result
 
 
 # parser that deals with column/data tags, as returned for metadata and search queries
-getStreamParser = (metadataTag, rawData) ->
+getStreamParser = (retsMethod, metadataTag, rawData) ->
   if metadataTag
     rawData = false
     result =
@@ -87,7 +87,7 @@ getStreamParser = (metadataTag, rawData) ->
     writeOutput('headerInfo', headers)
   processStatus = (attrs) ->
     if attrs.ReplyCode != '0' && attrs.ReplyCode != '20208'
-      return fail(new errors.RetsReplyError(attrs.ReplyCode, attrs.ReplyText, headers))
+      return fail(new errors.RetsReplyError(retsMethod, attrs.ReplyCode, attrs.ReplyText, headers))
     status =
       replyCode: attrs.ReplyCode
       replyTag: replyCodes.tagMap[attrs.ReplyCode]
@@ -96,7 +96,7 @@ getStreamParser = (metadataTag, rawData) ->
 
   parser.once 'startElement', (name, attrs) ->
     if name != 'RETS'
-      return fail(new Error('Unexpected results. Please check the RETS URL.'))
+      return fail(new errors.RetsProcessingError(retsMethod, 'Unexpected results. Please check the RETS URL.', headers))
     processStatus(attrs)
   
     parser.on 'startElement', (name, attrs) ->
@@ -143,7 +143,7 @@ getStreamParser = (metadataTag, rawData) ->
       switch name
         when 'DATA'
           if !columns
-            return fail(new Error('Failed to parse columns'))
+            return fail(new errors.RetsProcessingError(retsMethod, 'Failed to parse columns', headers))
           data = dataText.split(delimiter)
           model = {}
           i=1
@@ -154,7 +154,7 @@ getStreamParser = (metadataTag, rawData) ->
           result.rowsReceived++
         when 'COLUMNS'
           if !delimiter
-            return fail(new Error('Failed to parse delimiter'))
+            return fail(new errors.RetsProcessingError(retsMethod, 'Failed to parse delimiter', headers))
           columns = columnText.split(delimiter)
           writeOutput('columns', columns)
         when metadataTag
@@ -166,11 +166,11 @@ getStreamParser = (metadataTag, rawData) ->
           finish('done', result)
 
   parser.on 'error', (err) ->
-    fail(new Error("XML parsing error: #{err.stack}"))
+    fail(new errors.RetsProcessingError(retsMethod, "XML parsing error: #{errors.getErrorMessage(err)}", headers))
   
   parser.on 'end', () ->
     # we remove event listeners upon success, so getting here implies failure
-    fail(new Error("Unexpected end of xml stream."))
+    fail(new errors.RetsProcessingError(retsMethod, "Unexpected end of xml stream.", headers))
   
   { parser, fail, retsStream, response }
   

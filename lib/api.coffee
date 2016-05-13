@@ -26,6 +26,8 @@ module.exports =
   RetsError: errors.RetsError
   RetsReplyError: errors.RetsReplyError
   RetsServerError: errors.RetsServerError
+  RetsProcessingError: errors.RetsProcessingError
+  RetsParamError: errors.RetsParamError
   Client: Client
   getAutoLogoutClient: Client.getAutoLogoutClient
   getReplyTag: replyCodes.getReplyTag

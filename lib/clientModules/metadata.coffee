@@ -8,10 +8,11 @@ through2 = require('through2')
 replyCodes = require('../utils/replyCodes')
 retsHttp = require('../utils/retsHttp')
 retsParsing = require('../utils/retsParsing')
+errors = require('../utils/errors')
 
 
 _getMetadataImpl = (retsSession, type, options) -> new Promise (resolve, reject) ->
-  context = retsParsing.getStreamParser(type)
+  context = retsParsing.getStreamParser('getMetadata', type)
   retsHttp.streamRetsMethod('getMetadata', retsSession, options, context.fail, context.response)
   .pipe(context.parser)
 
@@ -55,9 +56,9 @@ _getMetadataImpl = (retsSession, type, options) -> new Promise (resolve, reject)
 
 getMetadata = (type, id, format='COMPACT') -> Promise.try () =>
   if !type
-    throw new Error('Metadata type is required')
+    throw new errors.RetsParamError('Metadata type is required')
   if !id
-    throw new Error('Resource type id is required (or for some types of metadata, "0" retrieves for all resource types)')
+    throw new errors.RetsParamError('Resource type id is required (or for some types of metadata, "0" retrieves for all resource types)')
   options =
     Type: type
     ID: id
@@ -73,7 +74,7 @@ getSystem = () ->
   @getMetadata('METADATA-SYSTEM')
   .then (xmlResponse) -> new Promise (resolve, reject) ->
     result = {}
-    retsParser = retsParsing.getSimpleParser(reject, xmlResponse.headerInfo)
+    retsParser = retsParsing.getSimpleParser('getMetadata', reject, xmlResponse.headerInfo)
 
     gotMetaDataInfo = false
     gotSystemInfo = false
@@ -93,7 +94,7 @@ getSystem = () ->
         return
       retsParser.finish()
       if !gotSystemInfo || !gotMetaDataInfo
-        reject(new Error('Failed to parse data'))
+        reject(new errors.RetsProcessingError('getMetadata', 'Failed to parse data'))
       else
         resolve(result)
     
@@ -103,13 +104,13 @@ getSystem = () ->
 
 module.exports = (_retsSession) ->
   if !_retsSession
-    throw new Error('System data not set; invoke login().')
+    throw new errors.RetsParamError('System data not set; invoke login().')
   
 
   _getParsedMetadataFactory = (type, format='COMPACT') ->
     (id, classType) -> Promise.try () ->
       if !id
-        throw new Error('Resource type id is required (or for some types of metadata, "0" retrieves for all resource types)')
+        throw new errors.RetsParamError('Resource type id is required (or for some types of metadata, "0" retrieves for all resource types)')
       options =
         Type: type
         ID: if classType then "#{id}:#{classType}" else id
