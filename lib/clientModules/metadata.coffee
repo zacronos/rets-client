@@ -71,13 +71,15 @@ getMetadata = (type, id, format='COMPACT') -> Promise.try () =>
 ###
 
 getSystem = () ->
-  @getMetadata('METADATA-SYSTEM')
+  @getMetadata('METADATA-SYSTEM', '0')
   .then (xmlResponse) -> new Promise (resolve, reject) ->
     result = {}
     retsParser = retsParsing.getSimpleParser('getMetadata', reject, xmlResponse.headerInfo)
 
     gotMetaDataInfo = false
     gotSystemInfo = false
+    comment = null
+    comments = []
     retsParser.parser.on 'startElement', (name, attrs) ->
       switch name
         when 'METADATA-SYSTEM'
@@ -88,14 +90,27 @@ getSystem = () ->
           gotSystemInfo = true
           result.systemId = attrs.SystemID
           result.systemDescription = attrs.SystemDescription
+          result.timeZoneOffset = attrs.TimeZoneOffset
+        when 'COMMENTS'
+          comment = ''
+          
+    retsParser.parser.on 'text', (text) ->
+      if retsParser.currElementName == 'COMMENTS'
+        comment += text
 
     retsParser.parser.on 'endElement', (name) ->
+      if name == 'COMMENTS'
+        comment = comment.trim()
+        if comment.length > 0
+          comments.push(comment)
       if name != 'RETS'
         return
       retsParser.finish()
       if !gotSystemInfo || !gotMetaDataInfo
         reject(new errors.RetsProcessingError('getMetadata', 'Failed to parse data'))
       else
+        if comments.length > 0
+          result.comments = comments
         resolve(result)
     
     retsParser.parser.write(xmlResponse.body)

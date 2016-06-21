@@ -5,10 +5,16 @@ A RETS (Real Estate Transaction Standard) client for Node.js.
 
 ## Changes
 
+#### 4.3.0
+Added support for TimeZoneOffset and Comments in the `metadata.getSystem()` call response.
+
+#### 4.2.0
+Improved error handling and error classes.  See the [error documentation](https://github.com/sbruno81/rets-client#errors).
+
 #### 4.1.0
 
 Added client configuration option to use POST instead of GET for all requests, as this seems to work better for some
-RETS servers.  See the [Example Usage](https://github.com/sbruno81/rets-client#example-usage).
+RETS servers.  See the [Example Usage](https://github.com/sbruno81/rets-client#client-configuration).
 
 #### 4.0.0 and earlier
 
@@ -55,7 +61,8 @@ should match existing code style.
         method: 'GET'  // this is the default, or for some servers you may want 'POST'
     };
 ...
-```    
+```
+
 ##### Client Configuration with UA Authorization
 ```javascript
     //create rets-client
@@ -71,7 +78,7 @@ should match existing code style.
 ##### Output helper used in many examples below
 
 ```javascript
-  var outputFields = function(obj, opts) {
+  function outputFields(obj, opts) {
     if (!opts) opts = {};
     
     var excludeFields;
@@ -100,7 +107,7 @@ should match existing code style.
   };
 ```
 
-#### Example RETS Session
+#### Example rets-client code
 ```javascript
   var rets = require('rets-client');
   var fs = require('fs');
@@ -140,11 +147,11 @@ should match existing code style.
       }).then(function () {
       
         //get field data for open houses
-        return client.metadata.getTable("OpenHouse", "OPENHOUSE");
+        return client.metadata.getTable("Property", "RESIDENTIAL");
       }).then(function (data) {
-        console.log("=============================================");
-        console.log("========  OpenHouse Table Metadata  ========");
-        console.log("=============================================");
+        console.log("==============================================");
+        console.log("========  Residential Table Metadata  ========");
+        console.log("===============================================");
         outputFields(data.results[0].info);
         for (var tableItem = 0; tableItem < data.results[0].metadata.length; tableItem++) {
           console.log("-------- Field " + tableItem + " --------");
@@ -160,11 +167,11 @@ should match existing code style.
       }).then(function (fields) {
       
         //perform a query using DMQL2 -- pass resource, class, and query, and options
-        return client.search.query("OpenHouse", "OPENHOUSE", "(OpenHouseType=PUBLIC),(ActiveYN=1)", {limit:100, offset:10})
+        return client.search.query("Property", "RESIDENTIAL", "(RecordModDate=2016-06-20+),(ActiveYN=1)", {limit:100, offset:10})
         .then(function (searchData) {
-          console.log("===========================================");
-          console.log("========  OpenHouse Query Results  ========");
-          console.log("===========================================");
+          console.log("=============================================");
+          console.log("========  Residential Query Results  ========");
+          console.log("=============================================");
           outputFields(searchData, {exclude: ['results']});
           //iterate through search results
           for (var dataItem = 0; dataItem < searchData.results.length; dataItem++) {
@@ -210,7 +217,7 @@ should match existing code style.
   var Promise = require('bluebird');
   
   // this function doesn't do much, it's just a placeholder for whatever you want to do with the results 
-  var doAsyncProcessing = function (row, index, callback) {
+  function doAsyncProcessing(row, index, callback) {
     console.log("-------- Result " + index + " --------");
     outputFields(row);
     // must be sure callback is called when this is done
