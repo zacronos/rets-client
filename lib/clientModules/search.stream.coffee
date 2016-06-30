@@ -63,7 +63,7 @@ searchRets = (queryOptions, headerInfoCallback) -> Promise.try () =>
 #       Please note that queryType and format are immutable.
 ###
 
-query = (resourceType, classType, queryString, options={}, rawData=false) ->
+query = (resourceType, classType, queryString, options={}, rawData=false, parserEncoding='UTF-8') ->
   baseOpts =
     searchType: resourceType
     class: classType
@@ -75,7 +75,7 @@ query = (resourceType, classType, queryString, options={}, rawData=false) ->
   delete queryOptions.format
   finalQueryOptions = queryOptionHelpers.normalizeOptions(queryOptions)
 
-  context = retsParsing.getStreamParser('search', null, rawData)
+  context = retsParsing.getStreamParser('search', null, rawData, parserEncoding)
   retsHttp.streamRetsMethod('search', @retsSession, finalQueryOptions, context.fail, context.response)
   .pipe(context.parser)
   
