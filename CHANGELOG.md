@@ -1,3 +1,13 @@
+#### 4.4.0
+Added a new `parserEncoding` param for `client.search.query()` and `client.search.stream.query()` calls, defaulting to
+UTF-8.
+
+#### 4.3.0
+Added support for TimeZoneOffset and Comments in the `metadata.getSystem()` call response.
+
+#### 4.2.0
+Improved error handling and error classes.  See the [error documentation](https://github.com/sbruno81/rets-client#errors).
+
 #### 4.1.0
 
 Added client configuration option to use POST instead of GET for all requests, as this seems to work better for some

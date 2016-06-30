@@ -5,6 +5,10 @@ A RETS (Real Estate Transaction Standard) client for Node.js.
 
 ## Changes
 
+#### 4.4.0
+Added a new `parserEncoding` param for `client.search.query()` and `client.search.stream.query()` calls.  UTF-8 is the
+default value, so this is to support RETS servers using ISO-8859-1 or some other encoding.
+
 #### 4.3.0
 Added support for TimeZoneOffset and Comments in the `metadata.getSystem()` call response.
 
