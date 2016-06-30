@@ -59,13 +59,13 @@ searchRets = (queryOptions) -> Promise.try () =>
 #       Please note that queryType and format are immutable.
 ###
 
-query = (resourceType, classType, queryString, options={}) -> new Promise (resolve, reject) =>
+query = (resourceType, classType, queryString, options={}, parserEncoding='UTF-8') -> new Promise (resolve, reject) =>
   result =
     results: []
     maxRowsExceeded: false
   currEntry = null
 
-  @stream.query(resourceType, classType, queryString, options)
+  @stream.query(resourceType, classType, queryString, options, null, parserEncoding)
   .pipe through2.obj (event, encoding, callback) ->
     switch event.type
       when 'data'

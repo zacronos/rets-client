@@ -18,10 +18,10 @@ headersHelper = require('./headers')
 
 
 # a parser with some basic common functionality, intended to be extended for real use
-getSimpleParser = (retsMethod, errCallback, headerInfo) ->
+getSimpleParser = (retsMethod, errCallback, headerInfo, parserEncoding='UTF-8') ->
   result =
     currElementName: null
-    parser: new expat.Parser('UTF-8')
+    parser: new expat.Parser(parserEncoding)
     finish: () ->
       result.parser.removeAllListeners()
     status: null
@@ -52,7 +52,7 @@ getSimpleParser = (retsMethod, errCallback, headerInfo) ->
 
 
 # parser that deals with column/data tags, as returned for metadata and search queries
-getStreamParser = (retsMethod, metadataTag, rawData) ->
+getStreamParser = (retsMethod, metadataTag, rawData, parserEncoding='UTF-8') ->
   if metadataTag
     rawData = false
     result =
@@ -70,7 +70,7 @@ getStreamParser = (retsMethod, metadataTag, rawData) ->
   currElementName = null
   headers = null
 
-  parser = new expat.Parser('UTF-8')
+  parser = new expat.Parser(parserEncoding)
   retsStream = through2.obj()
   finish = (type, payload) ->
     parser.removeAllListeners()
