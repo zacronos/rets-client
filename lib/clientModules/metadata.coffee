@@ -11,9 +11,9 @@ retsParsing = require('../utils/retsParsing')
 errors = require('../utils/errors')
 
 
-_getMetadataImpl = (retsSession, type, options) -> new Promise (resolve, reject) ->
+_getMetadataImpl = (retsSession, type, options, client) -> new Promise (resolve, reject) ->
   context = retsParsing.getStreamParser('getMetadata', type)
-  retsHttp.streamRetsMethod('getMetadata', retsSession, options, context.fail, context.response)
+  retsHttp.streamRetsMethod('getMetadata', retsSession, options, context.fail, context.response, client)
   .pipe(context.parser)
 
   result =
@@ -117,7 +117,7 @@ getSystem = () ->
     retsParser.parser.end()
 
 
-module.exports = (_retsSession) ->
+module.exports = (_retsSession, _client) ->
   if !_retsSession
     throw new errors.RetsParamError('System data not set; invoke login().')
   
@@ -130,7 +130,7 @@ module.exports = (_retsSession) ->
         Type: type
         ID: if classType then "#{id}:#{classType}" else id
         Format: format
-      _getMetadataImpl(_retsSession, type, options)
+      _getMetadataImpl(_retsSession, type, options, _client)
   
   
   _getParsedAllMetadataFactory = (type, format='COMPACT') ->
@@ -138,10 +138,11 @@ module.exports = (_retsSession) ->
       Type: type
       Id: '0'
       Format: format
-    () -> _getMetadataImpl(_retsSession, type, options)
+    () -> _getMetadataImpl(_retsSession, type, options, _client)
   
   
   retsSession: Promise.promisify(_retsSession)
+  client: _client
   getMetadata: getMetadata
   getSystem: getSystem
   getResources:       _getParsedMetadataFactory('METADATA-RESOURCE').bind(null, '0')

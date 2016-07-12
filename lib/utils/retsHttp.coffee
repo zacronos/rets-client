@@ -27,7 +27,7 @@ callRetsMethod = (methodName, retsSession, queryOptions) ->
     headerInfo: headersHelper.processHeaders(response.rawHeaders)
 
 
-streamRetsMethod = (methodName, retsSession, queryOptions, failCallback, responseCallback) ->
+streamRetsMethod = (methodName, retsSession, queryOptions, failCallback, responseCallback, client) ->
   debug("RETS #{methodName} (streaming)", queryOptions)
   done = false
   errorHandler = (error) ->
@@ -46,7 +46,10 @@ streamRetsMethod = (methodName, retsSession, queryOptions, failCallback, respons
       failCallback(error)
     else if responseCallback
       responseCallback(response)
-  stream = retsSession(qs: queryOptions)
+  if client.settings.method == 'POST'
+    stream = retsSession(form: queryOptions)
+  else
+    stream = retsSession(qs: queryOptions)
   stream.on 'error', errorHandler
   stream.on 'response', responseHandler
 

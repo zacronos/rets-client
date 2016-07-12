@@ -36,7 +36,7 @@ searchRets = (queryOptions, headerInfoCallback) -> Promise.try () =>
     resultStream.emit('error', err)
   if !headerInfoCallback
     headerInfoCallback = () ->  # noop
-  httpStream = retsHttp.streamRetsMethod 'search', @retsSession, finalQueryOptions, onError, headerInfoCallback
+  httpStream = retsHttp.streamRetsMethod 'search', @retsSession, finalQueryOptions, onError, headerInfoCallback, @client
   httpStream.pipe(resultStream)
 
 
@@ -76,15 +76,16 @@ query = (resourceType, classType, queryString, options={}, rawData=false, parser
   finalQueryOptions = queryOptionHelpers.normalizeOptions(queryOptions)
 
   context = retsParsing.getStreamParser('search', null, rawData, parserEncoding)
-  retsHttp.streamRetsMethod('search', @retsSession, finalQueryOptions, context.fail, context.response)
+  retsHttp.streamRetsMethod('search', @retsSession, finalQueryOptions, context.fail, context.response, @client)
   .pipe(context.parser)
   
   context.retsStream
 
 
-module.exports = (_retsSession) ->
+module.exports = (_retsSession, _client) ->
   if !_retsSession
     throw new errors.RetsParamError('System data not set; invoke login().')
   retsSession: _retsSession
+  client: _client
   query: query
   searchRets: searchRets
