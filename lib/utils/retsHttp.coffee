@@ -34,7 +34,7 @@ streamRetsMethod = (methodName, retsSession, queryOptions, failCallback, respons
     if done
       return
     done = true
-    debug "RETS #{methodName} error:", error
+    debug "RETS #{methodName} (streaming) error:", error
     failCallback(error)
   responseHandler = (response) ->
     if done
@@ -42,7 +42,7 @@ streamRetsMethod = (methodName, retsSession, queryOptions, failCallback, respons
     done = true
     if response.statusCode != 200
       error = new errors.RetsServerError(methodName, response.statusCode, response.statusMessage, response.rawHeaders)
-      debug "RETS #{methodName} error: #{error.message}"
+      debug "RETS #{methodName} (streaming) error: #{error.message}"
       failCallback(error)
     else if responseCallback
       responseCallback(response)

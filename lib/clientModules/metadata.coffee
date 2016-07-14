@@ -107,7 +107,7 @@ getSystem = () ->
         return
       retsParser.finish()
       if !gotSystemInfo || !gotMetaDataInfo
-        reject(new errors.RetsProcessingError('getMetadata', 'Failed to parse data'))
+        reject(new errors.RetsProcessingError('getSystem', 'Failed to parse data'))
       else
         if comments.length > 0
           result.comments = comments
