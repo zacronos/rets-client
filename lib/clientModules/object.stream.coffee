@@ -160,6 +160,8 @@ getObjects = (resourceType, objectType, ids, _options={}) -> Promise.try () =>
         resolve(result)
       .catch (error) ->
         fail(error)
+      .catch (error) ->
+        # swallowing this error, it's already been reported
     bodyStream = req.pipe(through2())
   .then (result) ->
     if result.objectStream || !alwaysGroupObjects
