@@ -14,10 +14,14 @@ errors = require('./errors')
 # Executes RETS login routine.
 ###
 
-login = (retsSession) ->
+login = (retsSession, client) ->
   retsHttp.callRetsMethod('login', Promise.promisify(retsSession), {})
   .then (retsResponse) -> new Promise (resolve, reject) ->
     headers = headersHelper.processHeaders(retsResponse.response.rawHeaders)
+    if client.settings.userAgentPassword && headers.setCookie
+      matches = headers.setCookie.match(/RETS\-Session\-ID=([^;]+);/)
+      if matches
+        client.settings.sessionId = matches[1]
     systemData =
       retsVersion: headers.retsVersion
       retsServer: headers.server
