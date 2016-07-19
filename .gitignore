@@ -11,7 +11,7 @@ node_modules
 testconfig.json
 
 #ignore build directory
-dist
+#dist
 
 # Ignore all logfiles and tempfiles.
 /log/*.log
