@@ -115,7 +115,7 @@ getObjectStream = (headerInfo, stream, handler) -> new Promise (resolve, reject)
       flushed = true
       handleEnd()
     catch err2
-      console.log('uncaught error is now caught: '+(err2.stack || err2))
+      console.log('uncaught error is now caught: '+errors.getErrorMessage(err)+'\n'+(err2.stack || errors.getErrorMessage(err2)))
       # I don't know how the error is getting thrown, but it's already been handled by this point, so we can swallow it
   stream.pipe(through2(interceptor, flush))
   resolve(objectStream)

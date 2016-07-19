@@ -143,7 +143,7 @@
           return handleEnd();
         } catch (error1) {
           err2 = error1;
-          return console.log(err2.stack || err2);
+          return console.log('uncaught error is now caught: ' + errors.getErrorMessage(err) + '\n' + (err2.stack || errors.getErrorMessage(err2)));
         }
       };
       stream.pipe(through2(interceptor, flush));
