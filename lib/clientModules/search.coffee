@@ -84,10 +84,11 @@ query = (resourceType, classType, queryString, options={}, parserEncoding='UTF-8
     callback()
 
 
-module.exports = (_retsSession) ->
+module.exports = (_retsSession, _client) ->
   if !_retsSession
     throw new errors.RetsParamError('System data not set; invoke login().')
   retsSession: Promise.promisify(_retsSession)
+  client: _client
   searchRets: searchRets
   query: query
-  stream: require('./search.stream')(_retsSession)
+  stream: require('./search.stream')(_retsSession, _client)

@@ -149,7 +149,7 @@ getObjects = (resourceType, objectType, ids, _options={}) -> Promise.try () =>
         return
       done = true
       return reject(errors.ensureRetsError('getObject', error))
-    req = retsHttp.streamRetsMethod('getObject', @retsSession, options, fail)
+    req = retsHttp.streamRetsMethod('getObject', @retsSession, options, fail, null, @client)
     req.on('error', fail)
     req.on 'response', (response) ->
       if done
@@ -192,10 +192,11 @@ getPreferredObjects = (resourceType, objectType, ids, options) ->
   @getObjects(resourceType, objectType, _annotateIds(ids, '0'), options)
 
 
-module.exports = (_retsSession) ->
+module.exports = (_retsSession, _client) ->
   if !_retsSession
     throw new errors.RetsParamError('System data not set; invoke login().')
   retsSession: _retsSession
+  client: _client
   getObjects: getObjects
   getAllObjects: getAllObjects
   getPreferredObjects: getPreferredObjects

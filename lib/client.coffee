@@ -78,9 +78,9 @@ class Client
         if @systemData[val]
           @urls[val] = normalizeUrl(@systemData[val], @settings.loginUrl)
 
-      @metadata = metadata(@baseRetsSession.defaults(uri: @urls[URL_KEYS.GET_METADATA]))
-      @search = search(@baseRetsSession.defaults(uri: @urls[URL_KEYS.SEARCH]))
-      @objects = object(@baseRetsSession.defaults(uri: @urls[URL_KEYS.GET_OBJECT]))
+      @metadata = metadata(@baseRetsSession.defaults(uri: @urls[URL_KEYS.GET_METADATA]), @)
+      @search = search(@baseRetsSession.defaults(uri: @urls[URL_KEYS.SEARCH]), @)
+      @objects = object(@baseRetsSession.defaults(uri: @urls[URL_KEYS.GET_OBJECT]), @)
       @logoutRequest = @baseRetsSession.defaults uri: @urls[URL_KEYS.LOGOUT]
 
       return @

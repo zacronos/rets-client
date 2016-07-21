@@ -133,11 +133,12 @@ getPreferredObjects = (resourceType, objectType, ids, options) ->
   .then _loadStreams
 
 
-module.exports = (_retsSession) ->
+module.exports = (_retsSession, _client) ->
   if !_retsSession
     throw new errors.RetsParamError('System data not set; invoke login().')
   retsSession: _retsSession
+  client: _client
   getObjects: getObjects
   getAllObjects: getAllObjects
   getPreferredObjects: getPreferredObjects
-  stream: require('./object.stream')(_retsSession)
+  stream: require('./object.stream')(_retsSession, _client)
