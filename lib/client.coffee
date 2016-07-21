@@ -12,7 +12,7 @@ object = require('./clientModules/object')
 
 auth = require('./utils/auth')
 normalizeUrl = require('./utils/normalizeUrl')
-
+errors = require('./utils/errors')
 
 URL_KEYS =
   GET_METADATA: "GetMetadata"
@@ -77,12 +77,26 @@ class Client
       for key,val of URL_KEYS
         if @systemData[val]
           @urls[val] = normalizeUrl(@systemData[val], @settings.loginUrl)
-
-      @metadata = metadata(@baseRetsSession.defaults(uri: @urls[URL_KEYS.GET_METADATA]), @)
-      @search = search(@baseRetsSession.defaults(uri: @urls[URL_KEYS.SEARCH]), @)
-      @objects = object(@baseRetsSession.defaults(uri: @urls[URL_KEYS.GET_OBJECT]), @)
+      hasPermissions = true
+      missingPermissions = []
+      if @urls[URL_KEYS.GET_METADATA]
+        @metadata = metadata(@baseRetsSession.defaults(uri: @urls[URL_KEYS.GET_METADATA]), @)
+      else
+        hasPermissions = false
+        missingPermissions.push URL_KEYS.GET_METADATA
+      if @urls[URL_KEYS.SEARCH]
+        @search = search(@baseRetsSession.defaults(uri: @urls[URL_KEYS.SEARCH]), @)
+      else
+        hasPermissions = false
+        missingPermissions.push URL_KEYS.SEARCH
+      if @urls[URL_KEYS.GET_OBJECT]
+        @objects = object(@baseRetsSession.defaults(uri: @urls[URL_KEYS.GET_OBJECT]), @)
+      else
+        hasPermissions = false
+        missingPermissions.push URL_KEYS.GET_OBJECT
       @logoutRequest = @baseRetsSession.defaults uri: @urls[URL_KEYS.LOGOUT]
-
+      if !hasPermissions
+        throw new errors.RetsPermissionError(missingPermissions)
       return @
 
   # Logs the user out of the current session
