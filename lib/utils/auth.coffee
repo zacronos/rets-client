@@ -14,10 +14,21 @@ errors = require('./errors')
 # Executes RETS login routine.
 ###
 
-login = (retsSession) ->
+login = (retsSession, client) ->
   retsHttp.callRetsMethod('login', Promise.promisify(retsSession), {})
   .then (retsResponse) -> new Promise (resolve, reject) ->
     headers = headersHelper.processHeaders(retsResponse.response.rawHeaders)
+    if client.settings.userAgentPassword && headers.setCookie
+      typeIsArray = Array.isArray || ( value ) -> return {}.toString.call( value ) is '[object Array]'
+      if typeIsArray headers.setCookie
+        headerCookies = headers.setCookie
+      else
+        headerCookies = [headers.setCookie];
+      for headerCookie in headerCookies
+        matches = headerCookie.match(/RETS\-Session\-ID=([^;]+);/)
+        if matches
+          client.settings.sessionId = matches[1]
+          break
     systemData =
       retsVersion: headers.retsVersion
       retsServer: headers.server

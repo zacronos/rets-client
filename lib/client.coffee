@@ -70,7 +70,7 @@ class Client
   login: () ->
     options =
       uri: @settings.loginUrl
-    auth.login(@baseRetsSession.defaults(options))
+    auth.login(@baseRetsSession.defaults(options), @)
     .then (systemData) =>
       @systemData = systemData
       @urls = {}
@@ -95,6 +95,10 @@ Client.getAutoLogoutClient = (settings, handler) -> Promise.try () ->
   client.login()
   .then () ->
     Promise.try () ->
+      if client.settings.userAgentPassword && client.settings.sessionId
+        a1 = crypto.createHash('md5').update([client.settings.userAgent, client.settings.userAgentPassword].join(":")).digest('hex')
+        retsUaAuth = crypto.createHash('md5').update([a1, "", client.settings.sessionId || "", client.settings.version || client.headers['RETS-Version']].join(":")).digest('hex')
+        client.headers['RETS-UA-Authorization'] = "Digest " + retsUaAuth
       handler(client)
     .finally () ->
       client.logout()
