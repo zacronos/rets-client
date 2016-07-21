@@ -110,6 +110,9 @@ getStreamParser = (retsMethod, metadataTag, rawData, parserEncoding='UTF-8') ->
           writeOutput('metadataStart', attrs)
           result.rowsReceived = 0
         when 'COUNT'
+          ### Ignore count write when stream ended due to NO_RECORDS_FOUND (20201) error. ###
+          if !retsStream.writable && parseInt(attrs.Records) == 0
+            return false
           writeOutput('count', parseInt(attrs.Records))
         when 'MAXROWS'
           result.maxRowsExceeded = true
