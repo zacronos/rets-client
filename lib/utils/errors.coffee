@@ -52,6 +52,13 @@ class RetsParamError extends RetsError
     @name = 'RetsParamError'
     Error.captureStackTrace(this, RetsParamError)
 
+class RetsPermissionError extends RetsError
+  constructor: (missing = []) ->
+    @name = 'RetsPermissionError'
+    @message = "Login was successful, but this account does not have the proper permissions."
+    if missing.length
+      @message += " Missing the following permissions: #{missing.join(', ')}"
+    Error.captureStackTrace(this, RetsPermissionError)
 
 ensureRetsError = (retsMethod, error, headerInfo) ->
   if error instanceof RetsError
@@ -66,6 +73,7 @@ module.exports = {
   RetsServerError
   RetsProcessingError
   RetsParamError
+  RetsPermissionError
   ensureRetsError
   getErrorMessage
 }
