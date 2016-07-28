@@ -52,7 +52,7 @@ streamRetsMethod = (methodName, retsSession, queryOptions, failCallback, respons
   else
     request.qs = queryOptions
   if methodName == 'getObject'
-    request.headers = { Accept: 'text/xml' }
+    request.headers = { Accept: '*/*' }
   stream = retsSession(request)
   stream.on 'error', errorHandler
   stream.on 'response', responseHandler
