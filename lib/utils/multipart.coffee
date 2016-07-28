@@ -13,7 +13,7 @@ errors = require('./errors')
 # Multipart parser derived from formidable library. See https://github.com/felixge/node-formidable
 
 
-getObjectStream = (headerInfo, stream, handler) -> new Promise (resolve, reject) ->
+getObjectStream = (headerInfo, stream, handler, options) -> new Promise (resolve, reject) ->
   multipartBoundary = headerInfo.contentType.match(/boundary="[^"]+"/ig)?[0].slice('boundary="'.length, -1)
   if !multipartBoundary
     multipartBoundary = headerInfo.contentType.match(/boundary=[^;]+/ig)?[0].slice('boundary='.length)
@@ -76,7 +76,7 @@ getObjectStream = (headerInfo, stream, handler) -> new Promise (resolve, reject)
     bodyStreamDone = false
     bodyStream.on 'end', () ->
       bodyStreamDone = true
-    handler(headers, bodyStream)
+    handler(headers, bodyStream, false, options)
     .then (object) ->
       if !objectStreamDone
         objectStream.write(object)

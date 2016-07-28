@@ -18,15 +18,18 @@ errors = require('../utils/errors')
 _insensitiveStartsWith = (str, prefix) ->
   str.toLowerCase().lastIndexOf(prefix.toLowerCase(), 0) == 0
 
-_processBody = (headers, bodyStream, preDecoded) -> new Promise (resolve, reject) ->
+_processBody = (headers, bodyStream, preDecoded, options) -> new Promise (resolve, reject) ->
   headerInfo = headersHelper.processHeaders(headers)
   onError = (error) ->
     reject(errors.ensureRetsError('getObject', error, headerInfo))
-  if _insensitiveStartsWith(headerInfo.contentType, 'text/xml')
+  if _insensitiveStartsWith(headerInfo.contentType, 'text/xml') && options.Location == 1
+    resolve
+      headerInfo: headerInfo
+  else if _insensitiveStartsWith(headerInfo.contentType, 'text/xml')
     retsParser = retsParsing.getSimpleParser('getObject', onError, headerInfo)
     bodyStream.pipe(retsParser.parser)
   else if _insensitiveStartsWith(headerInfo.contentType, 'multipart')
-    multipart.getObjectStream(headerInfo, bodyStream, _processBody)
+    multipart.getObjectStream(headerInfo, bodyStream, _processBody, options)
     .then (objectStream) ->
       resolve {headerInfo, objectStream}
     .catch (error) ->
@@ -155,7 +158,7 @@ getObjects = (resourceType, objectType, ids, _options={}) -> Promise.try () =>
       if done
         return
       done = true
-      _processBody(response.rawHeaders, bodyStream, true)
+      _processBody(response.rawHeaders, bodyStream, true, options)
       .then (result) ->
         resolve(result)
       .catch (error) ->
