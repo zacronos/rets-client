@@ -46,10 +46,14 @@ streamRetsMethod = (methodName, retsSession, queryOptions, failCallback, respons
       failCallback(error)
     else if responseCallback
       responseCallback(response)
+  request = {}
   if client.settings.method == 'POST'
-    stream = retsSession(form: queryOptions)
+    request.form = queryOptions
   else
-    stream = retsSession(qs: queryOptions)
+    request.qs = queryOptions
+  if methodName == 'getObject'
+    request.headers = { Accept: 'text/xml' }
+  stream = retsSession(request)
   stream.on 'error', errorHandler
   stream.on 'response', responseHandler
 
