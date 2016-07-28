@@ -145,8 +145,6 @@ getObjects = (resourceType, objectType, ids, _options={}) -> Promise.try () =>
   new Promise (resolve, reject) =>
     done = false
     fail = (error) ->
-      if done
-        return
       done = true
       return reject(errors.ensureRetsError('getObject', error))
     req = retsHttp.streamRetsMethod('getObject', @retsSession, options, fail, null, @client)
