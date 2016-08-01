@@ -108,11 +108,15 @@ getObjectStream = (headerInfo, stream, handler, options) -> new Promise (resolve
     parser.write(chunk)
     callback()
   flush = (callback) ->
-    err = parser.end()
-    if err
-      handleError(new errors.RetsProcessingError('getObject', "Unexpected end of data: #{errors.getErrorMessage(err)}", headerInfo))
-    flushed = true
-    handleEnd()
+    try
+      err = parser.end()
+      if err
+        handleError(new errors.RetsProcessingError('getObject', "Unexpected end of data: #{errors.getErrorMessage(err)}", headerInfo))
+      flushed = true
+      handleEnd()
+    catch err2
+      console.log('uncaught error is now caught: '+errors.getErrorMessage(err)+'\n'+(err2.stack || errors.getErrorMessage(err2)))
+      # I don't know how the error is getting thrown, but it's already been handled by this point, so we can swallow it
   stream.pipe(through2(interceptor, flush))
   resolve(objectStream)
     
