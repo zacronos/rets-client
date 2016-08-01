@@ -5,6 +5,9 @@ A RETS (Real Estate Transaction Standard) client for Node.js.
 
 ## Changes
 
+#### 4.6.0
+Added support for `Location: 1` option on `getObject` calls.
+
 #### 4.5.0
 Added a new error class for RETS permissions problems on login.
 
