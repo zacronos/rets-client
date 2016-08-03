@@ -44,7 +44,7 @@ login = (retsSession, client) ->
       for keyVal in keyVals
         split = keyVal.split('=')
         if split.length > 1
-          systemData[split[0]] = split[1]
+          systemData[split[0].trim()] = split[1].trim()
 
     retsParser.parser.on 'endElement', (name) ->
       if name != 'RETS'
