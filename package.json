@@ -12,13 +12,13 @@
     "formidable": "~1.0.15",
     "node-expat": "^2.3.10",
     "request": "^2.55.0",
+    "request-debug": "^0.2.0",
     "stream-buffers": "~0.2.5",
     "through2": "^2.0.0",
     "tough-cookie": "^0.13.0"
   },
   "devDependencies": {
-    "coffee-script": "^1.8.0",
-    "request-debug": "^0.2.0"
+    "coffee-script": "^1.8.0"
   },
   "files": [
     "dist",
