@@ -98,7 +98,9 @@ getStreamParser = (retsMethod, metadataTag, rawData, parserEncoding='UTF-8') ->
     if name != 'RETS'
       return fail(new errors.RetsProcessingError(retsMethod, 'Unexpected results. Please check the RETS URL.', headers))
     processStatus(attrs)
-  
+    if !retsStream.writable
+      # assume processStatus found a non-zero/20208 error code and ended the stream  So, we don't want to add the startElement listener.
+      return
     parser.on 'startElement', (name, attrs) ->
       currElementName = name
       switch name
