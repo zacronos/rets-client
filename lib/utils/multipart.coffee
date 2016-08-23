@@ -37,7 +37,6 @@ getObjectStream = (headerInfo, stream, handler, options) -> new Promise (resolve
   
   handleError = (err) ->
     if bodyStream
-      bodyStream.emit('error', err)
       bodyStream.end()
       bodyStream = null
     if objectStreamDone
@@ -85,8 +84,6 @@ getObjectStream = (headerInfo, stream, handler, options) -> new Promise (resolve
     .then () ->
       partDone = true
       handleEnd()
-    .catch (error) ->
-      # swallowing this error, it's already been reported
     parser.onPartData = (b, start, end) ->
       if !bodyStreamDone
         bodyStream.write(b.slice(start, end))
@@ -108,15 +105,11 @@ getObjectStream = (headerInfo, stream, handler, options) -> new Promise (resolve
     parser.write(chunk)
     callback()
   flush = (callback) ->
-    try
-      err = parser.end()
-      if err
-        handleError(new errors.RetsProcessingError('getObject', "Unexpected end of data: #{errors.getErrorMessage(err)}", headerInfo))
-      flushed = true
-      handleEnd()
-    catch err2
-      console.log('uncaught error is now caught: '+errors.getErrorMessage(err)+'\n'+(err2.stack || errors.getErrorMessage(err2)))
-      # I don't know how the error is getting thrown, but it's already been handled by this point, so we can swallow it
+    err = parser.end()
+    if err
+      handleError(new errors.RetsProcessingError('getObject', "Unexpected end of data: #{errors.getErrorMessage(err)}", headerInfo))
+    flushed = true
+    handleEnd()
   stream.pipe(through2(interceptor, flush))
   resolve(objectStream)
     
