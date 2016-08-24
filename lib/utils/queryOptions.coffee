@@ -30,6 +30,14 @@ _queryOptionsDefaults =
   restrictedIndicator: '***'
   limit: 'NONE'
 
+capitalizeFirstLetter = (string) ->
+  string.charAt(0).toUpperCase() + string.slice(1);
+
+remapKeys = (obj) ->
+  result = {}
+  for key, value of obj
+    result[capitalizeFirstLetter(key)] = value
+  result
 
 normalizeOptions = (queryOptions) ->
   if !queryOptions
@@ -40,7 +48,8 @@ normalizeOptions = (queryOptions) ->
     throw errors.RetsProcessingError('search', 'class is required (ex: RESI)')
   if !queryOptions.query
     throw errors.RetsProcessingError('search', 'query is required (ex: (MatrixModifiedDT=2014-01-01T00:00:00.000+) )')
-  mergeOptions(queryOptions, _queryOptionsDefaults)
+  remapKeys(mergeOptions(queryOptions, _queryOptionsDefaults))
+
 
 
 module.exports =
