@@ -331,7 +331,3 @@ to that provided by the [request-debug module](https://github.com/request/reques
 
 If you want access to the request debugging data directly, you can use the `requestDebugFunction` client setting.  This
 function will be set up as a debug handler as per the [request-debug module](https://github.com/request/request-debug).
-
-In order to get either `rets-client:request` logging, or to use `requestDebugFunction`, you will need to ensure
-dev dependencies (in particular, request-debug) are installed for rets-client.  The easiest way to do this is to first
-change directory to the location of rets-client (e.g. `cd ./node_modules/rets-client`), and then run `npm install`.
