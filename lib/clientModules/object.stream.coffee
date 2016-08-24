@@ -22,7 +22,7 @@ _processBody = (headers, bodyStream, preDecoded, options) -> new Promise (resolv
   headerInfo = headersHelper.processHeaders(headers)
   onError = (error) ->
     reject(errors.ensureRetsError('getObject', error, headerInfo))
-  if _insensitiveStartsWith(headerInfo.contentType, 'text/xml') && options.Location == 1
+  if headerInfo.location && options.Location == 1
     resolve
       headerInfo: headerInfo
   else if _insensitiveStartsWith(headerInfo.contentType, 'text/xml')
