@@ -63,6 +63,8 @@ class Client
 
     if @settings.proxyUrl
       defaults.proxy = @settings.proxyUrl
+      if @settings.useTunnel
+        defaults.tunnel = @settings.useTunnel
     
     @baseRetsSession = request.defaults defaults
 
