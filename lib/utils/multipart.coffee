@@ -71,8 +71,6 @@ getObjectStream = (headerInfo, stream, handler, options) -> new Promise (resolve
 
   parser.onHeadersEnd = () ->
     bodyStream = through2()
-    bodyStream.on 'end', () ->
-      bodyStream = null
     handler(headers, bodyStream, false, options)
     .then (object) ->
       if !objectStreamDone
@@ -86,6 +84,7 @@ getObjectStream = (headerInfo, stream, handler, options) -> new Promise (resolve
       bodyStream?.write(b.slice(start, end))
     parser.onPartEnd = () ->
       bodyStream?.end()
+      bodyStream = null
 
   parser.onEnd = () ->
     if done
