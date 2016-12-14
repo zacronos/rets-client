@@ -5,6 +5,8 @@
 MultipartParser = require('formidable/lib/multipart_parser').MultipartParser
 Promise = require('bluebird')
 through2 = require('through2')
+debug = require('debug')('rets-client:multipart')
+debugVerbose = require('debug')('rets-client:multipart:verbose')
 
 retsParsing = require('./retsParsing')
 errors = require('./errors')
@@ -22,7 +24,6 @@ getObjectStream = (headerInfo, stream, handler, options) -> new Promise (resolve
   
   parser = new MultipartParser()
   objectStream = through2.obj()
-  objectStreamDone = false
   headerField = ''
   headerValue = ''
   headers = []
@@ -32,23 +33,26 @@ getObjectStream = (headerInfo, stream, handler, options) -> new Promise (resolve
   partDone = false
   flushed = false
   
-  objectStream.on 'end', () ->
-    objectStreamDone = true
-  
   handleError = (err) ->
+    debug("handleError: #{err.error||err}")
     bodyStream?.end()
     bodyStream = null
-    if objectStreamDone
+    if !objectStream
       return
     if !err.error || !err.headerInfo
       err = {error: err}
     objectStream.write(err)
   
   handleEnd = () ->
-    if done && partDone && flushed && !objectStreamDone
+    if done && partDone && flushed && objectStream
+      debug("handleEnd")
       objectStream.end()
+      objectStream = null
+    else
+      debug("handleEnd not ready #{JSON.stringify({done, partDone, flushed, objectStream: !!objectStream})}")
 
   parser.onPartBegin = () ->
+    debug("onPartBegin")
     object =
       buffer: null
       error: null
@@ -58,52 +62,65 @@ getObjectStream = (headerInfo, stream, handler, options) -> new Promise (resolve
     partDone = false
 
   parser.onHeaderField = (b, start, end) ->
+    debugVerbose("onHeaderField: #{headerField}")
     headerField += b.toString('utf8', start, end)
 
   parser.onHeaderValue = (b, start, end) ->
+    debugVerbose("onHeaderValue: #{headerValue}")
     headerValue += b.toString('utf8', start, end)
 
-  parser.onHeaderEnd = () =>
+  parser.onHeaderEnd = () ->
+    debug("onHeaderEnd: {#{headerField}: #{headerValue}}")
     headers.push(headerField)
     headers.push(headerValue)
     headerField = ''
     headerValue = ''
 
   parser.onHeadersEnd = () ->
+    debug("onHeadersEnd: [#{headers.length/2} headers parsed]")
     bodyStream = through2()
     handler(headers, bodyStream, false, options)
     .then (object) ->
-      if !objectStreamDone
-        objectStream.write(object)
+      objectStream?.write(object)
     .catch (err) ->
       handleError(errors.ensureRetsError('getObject', err, headers))
     .then () ->
       partDone = true
       handleEnd()
-    parser.onPartData = (b, start, end) ->
-      bodyStream?.write(b.slice(start, end))
-    parser.onPartEnd = () ->
-      bodyStream?.end()
-      bodyStream = null
+      
+  parser.onPartData = (b, start, end) ->
+    debugVerbose("onPartData")
+    bodyStream?.write(b.slice(start, end))
+    
+  parser.onPartEnd = () ->
+    debug("onPartEnd")
+    bodyStream?.end()
+    bodyStream = null
 
   parser.onEnd = () ->
-    if done
-      return
+    debug("onEnd")
     done = true
+    handleEnd()
 
   parser.initWithBoundary(multipartBoundary)
   
   stream.on 'error', (err) ->
-    streamError = err
+    debug("stream error")
+    handleError(err)
+    
   interceptor = (chunk, encoding, callback) ->
     parser.write(chunk)
     callback()
+    
   flush = (callback) ->
+    debug("stream flush")
     err = parser.end()
     if err
       handleError(new errors.RetsProcessingError('getObject', "Unexpected end of data: #{errors.getErrorMessage(err)}", headerInfo))
     flushed = true
     handleEnd()
+    callback()
+    
   stream.pipe(through2(interceptor, flush))
   resolve(objectStream)
     

@@ -328,6 +328,8 @@ You can turn on all debug logging by adding `rets-client:*` to your `DEBUG` envi
 * `rets-client:main`: basic logging of RETS call options and errors
 * `rets-client:request`: logging of HTTP request/response headers and other related info, with output almost identical
 to that provided by the [request-debug module](https://github.com/request/request-debug).
+* `rets-client:multipart`: logging of most multipart parser events
+* `rets-client:multipart:verbose`: logging of additional multipart parser events (too cluttered for most purposes)
 
 If you want access to the request debugging data directly, you can use the `requestDebugFunction` client setting.  This
 function will be set up as a debug handler as per the [request-debug module](https://github.com/request/request-debug).
