@@ -30,11 +30,14 @@ errors = require('../utils/errors')
 #       limit:"NONE"
 ###
 
-searchRets = (queryOptions) -> Promise.try () =>
-  finalQueryOptions = queryOptionHelpers.normalizeOptions(queryOptions)
-  retsHttp.callRetsMethod('search', @retsSession, finalQueryOptions)
-  .then (result) ->
-    result.body
+searchRets = (_queryOptions) -> Promise.try () =>
+  queryOptions = queryOptionHelpers.normalizeOptions(_queryOptions)
+  retsHttp.callRetsMethod({retsMethod: 'search', queryOptions}, @retsSession, @client)
+  .then (retsContext) ->
+    return {
+      text: retsContext.body
+      headerInfo: retsContext.headerInfo
+    }
 
 
 ###
@@ -65,8 +68,8 @@ query = (resourceType, classType, queryString, options={}, parserEncoding='UTF-8
     maxRowsExceeded: false
   currEntry = null
 
-  @stream.query(resourceType, classType, queryString, options, null, parserEncoding)
-  .pipe through2.obj (event, encoding, callback) ->
+  retsContext = @stream.query(resourceType, classType, queryString, options, null, parserEncoding)
+  retsContext.retsStream.pipe through2.obj (event, encoding, callback) ->
     switch event.type
       when 'data'
         result.results.push(event.payload)
@@ -78,6 +81,7 @@ query = (resourceType, classType, queryString, options={}, parserEncoding='UTF-8
       when 'done'
         for own key, value of event.payload
           result[key] = value
+        result.headerInfo = retsContext.headerInfo
         resolve(result)
       when 'error'
         reject(event.payload)

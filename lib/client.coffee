@@ -67,14 +67,14 @@ class Client
         defaults.tunnel = @settings.useTunnel
     
     @baseRetsSession = request.defaults defaults
+    @loginRequest = Promise.promisify(@baseRetsSession.defaults(uri: @settings.loginUrl))
 
 
   login: () ->
-    options =
-      uri: @settings.loginUrl
-    auth.login(@baseRetsSession.defaults(options), @)
-    .then (systemData) =>
-      @systemData = systemData
+    auth.login(@loginRequest, @)
+    .then (retsContext) =>
+      @systemData = retsContext.systemData
+      @loginHeaderInfo = retsContext.headerInfo
       @urls = {}
       for key,val of URL_KEYS
         if @systemData[val]
@@ -96,14 +96,16 @@ class Client
       else
         hasPermissions = false
         missingPermissions.push URL_KEYS.GET_OBJECT
-      @logoutRequest = @baseRetsSession.defaults uri: @urls[URL_KEYS.LOGOUT]
+      @logoutRequest = Promise.promisify(@baseRetsSession.defaults(uri: @urls[URL_KEYS.LOGOUT]))
       if !hasPermissions
         throw new errors.RetsPermissionError(missingPermissions)
       return @
 
   # Logs the user out of the current session
   logout: () ->
-    auth.logout(@logoutRequest)
+    auth.logout(@logoutRequest, @)
+    .then (retsContext) =>
+      @logoutHeaderInfo = retsContext.headerInfo
 
 
 Client.getAutoLogoutClient = (settings, handler) -> Promise.try () ->

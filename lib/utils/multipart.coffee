@@ -10,20 +10,22 @@ debugVerbose = require('debug')('rets-client:multipart:verbose')
 
 retsParsing = require('./retsParsing')
 errors = require('./errors')
+headersHelper = require('./headers')
 
 
 # Multipart parser derived from formidable library. See https://github.com/felixge/node-formidable
 
 
-getObjectStream = (headerInfo, stream, handler, options) -> new Promise (resolve, reject) ->
-  multipartBoundary = headerInfo.contentType.match(/boundary="[^"]+"/ig)?[0].slice('boundary="'.length, -1)
+getObjectStream = (retsContext, handler) -> new Promise (resolve, reject) ->
+  multipartBoundary = retsContext.headerInfo.contentType.match(/boundary="[^"]+"/ig)?[0].slice('boundary="'.length, -1)
   if !multipartBoundary
-    multipartBoundary = headerInfo.contentType.match(/boundary=[^;]+/ig)?[0].slice('boundary='.length)
+    multipartBoundary = retsContext.headerInfo.contentType.match(/boundary=[^;]+/ig)?[0].slice('boundary='.length)
   if !multipartBoundary
-    throw new errors.RetsProcessingError('getObject', 'Could not find multipart boundary', headerInfo)
+    throw new errors.RetsProcessingError(retsContext, 'Could not find multipart boundary')
   
   parser = new MultipartParser()
   objectStream = through2.obj()
+  objectStream.write(type: 'headerInfo', headerInfo: retsContext.headerInfo)
   headerField = ''
   headerValue = ''
   headers = []
@@ -40,7 +42,7 @@ getObjectStream = (headerInfo, stream, handler, options) -> new Promise (resolve
     if !objectStream
       return
     if !err.error || !err.headerInfo
-      err = {error: err}
+      err = {type: 'error', error: err, headerInfo: retsContext.headerInfo}
     objectStream.write(err)
   
   handleEnd = () ->
@@ -49,7 +51,7 @@ getObjectStream = (headerInfo, stream, handler, options) -> new Promise (resolve
       objectStream.end()
       objectStream = null
     else
-      debug("handleEnd not ready #{JSON.stringify({done, partDone, flushed, objectStream: !!objectStream})}")
+      debug("handleEnd not ready: #{JSON.stringify({done, partDone, flushed, objectStream: !!objectStream})}")
 
   parser.onPartBegin = () ->
     debug("onPartBegin")
@@ -79,11 +81,16 @@ getObjectStream = (headerInfo, stream, handler, options) -> new Promise (resolve
   parser.onHeadersEnd = () ->
     debug("onHeadersEnd: [#{headers.length/2} headers parsed]")
     bodyStream = through2()
-    handler(headers, bodyStream, false, options)
+    newRetsContext =
+      retsMethod: retsContext.retsMethod
+      queryOptions: retsContext.queryOptions
+      headerInfo: headersHelper.processHeaders(headers)
+      parser: bodyStream
+    handler(newRetsContext, false)
     .then (object) ->
       objectStream?.write(object)
     .catch (err) ->
-      handleError(errors.ensureRetsError('getObject', err, headers))
+      handleError(errors.ensureRetsError(newRetsContext, err))
     .then () ->
       partDone = true
       handleEnd()
@@ -103,8 +110,8 @@ getObjectStream = (headerInfo, stream, handler, options) -> new Promise (resolve
     handleEnd()
 
   parser.initWithBoundary(multipartBoundary)
-  
-  stream.on 'error', (err) ->
+
+  retsContext.parser.on 'error', (err) ->
     debug("stream error")
     handleError(err)
     
@@ -116,12 +123,12 @@ getObjectStream = (headerInfo, stream, handler, options) -> new Promise (resolve
     debug("stream flush")
     err = parser.end()
     if err
-      handleError(new errors.RetsProcessingError('getObject', "Unexpected end of data: #{errors.getErrorMessage(err)}", headerInfo))
+      handleError(new errors.RetsProcessingError(retsContext, "Unexpected end of data: #{errors.getErrorMessage(err)}"))
     flushed = true
     handleEnd()
     callback()
-    
-  stream.pipe(through2(interceptor, flush))
+
+  retsContext.parser.pipe(through2(interceptor, flush))
   resolve(objectStream)
     
 module.exports.getObjectStream = getObjectStream

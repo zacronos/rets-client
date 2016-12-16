@@ -23,27 +23,27 @@ class RetsError extends Error
 
   
 class RetsReplyError extends RetsError
-  constructor: (@retsMethod, @replyCode, @replyText, _headerInfo) ->
+  constructor: (retsContext, @replyCode, @replyText) ->
     @name = 'RetsReplyError'
     @replyTag = if replyCodes.tagMap[@replyCode]? then replyCodes.tagMap[@replyCode] else 'unknown reply code'
+    {@retsMethod, @queryOptions, @headerInfo} = retsContext
     @message = "RETS Server reply while attempting #{@retsMethod} - ReplyCode #{@replyCode} (#{@replyTag}); ReplyText: #{@replyText}"
-    @headerInfo = headersHelper.processHeaders(_headerInfo)
     Error.captureStackTrace(this, RetsReplyError)
 
 
 class RetsServerError extends RetsError
-  constructor: (@retsMethod, @httpStatus, @httpStatusMessage, _headerInfo) ->
+  constructor: (retsContext, @httpStatus, @httpStatusMessage) ->
     @name = 'RetsServerError'
+    {@retsMethod, @queryOptions, @headerInfo} = retsContext
     @message = "RETS Server error while attempting #{@retsMethod} - HTTP Status #{@httpStatus} returned (#{@httpStatusMessage})"
-    @headerInfo = headersHelper.processHeaders(_headerInfo)
     Error.captureStackTrace(this, RetsServerError)
 
 
 class RetsProcessingError extends RetsError
-  constructor: (@retsMethod, @sourceError, _headerInfo) ->
+  constructor: (retsContext, @sourceError) ->
     @name = 'RetsProcessingError'
+    {@retsMethod, @queryOptions, @headerInfo} = retsContext
     @message = "Error while processing RETS response for #{@retsMethod} - #{getErrorMessage(@sourceError)}"
-    @headerInfo = headersHelper.processHeaders(_headerInfo)
     Error.captureStackTrace(this, RetsProcessingError)
 
 
@@ -60,12 +60,12 @@ class RetsPermissionError extends RetsError
       @message += " Missing the following permissions: #{missing.join(', ')}"
     Error.captureStackTrace(this, RetsPermissionError)
 
-ensureRetsError = (retsMethod, error, headerInfo) ->
+ensureRetsError = (retsContext, error) ->
   if error instanceof RetsError
     return error
   else
-    return new RetsProcessingError(retsMethod, error, headerInfo)
-    
+    return new RetsProcessingError(retsContext, error)
+
 
 module.exports = {
   RetsError

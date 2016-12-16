@@ -10,52 +10,61 @@ errors = require('./errors')
 headersHelper = require('./headers')
 
 
-callRetsMethod = (methodName, retsSession, queryOptions) ->
-  debug("RETS #{methodName}:", queryOptions)
+callRetsMethod = (retsContext, promisifiedRetsSession, client) ->
+  debug("RETS #{retsContext.retsMethod}:", retsContext.queryOptions)
   Promise.try () ->
-    retsSession(qs: queryOptions)
+    request = {}
+    if client.settings.method == 'POST'
+      request.form = retsContext.queryOptions
+    else
+      request.qs = retsContext.queryOptions
+    promisifiedRetsSession(request)
   .catch (error) ->
-    debug("RETS #{methodName} error:", error)
+    debug("RETS #{retsContext.retsMethod} error:", error)
     Promise.reject(error)
   .spread (response, body) ->
     if response.statusCode != 200
-      error = new errors.RetsServerError(methodName, response.statusCode, response.statusMessage, response.rawHeaders)
-      debug("RETS #{methodName} error: #{error.message}")
+      error = new errors.RetsServerError(retsContext, response.statusCode, response.statusMessage)
+      debug("RETS #{retsContext.retsMethod} error: #{error.message}")
       return Promise.reject(error)
-    body: body
-    response: response
-    headerInfo: headersHelper.processHeaders(response.rawHeaders)
+    retsContext.headerInfo = headersHelper.processHeaders(response.rawHeaders)
+    retsContext.body = body
+    retsContext.response = response
+    return retsContext
 
 
-streamRetsMethod = (methodName, retsSession, queryOptions, failCallback, responseCallback, client) ->
-  debug("RETS #{methodName} (streaming)", queryOptions)
+streamRetsMethod = (retsContext, regularRetsSession, client) ->
+  debug("RETS #{retsContext.retsMethod} (streaming)", retsContext.queryOptions)
   done = false
   errorHandler = (error) ->
     if done
       return
     done = true
-    debug("RETS #{methodName} (streaming) error:", error)
-    failCallback(error)
+    debug("RETS #{retsContext.retsMethod} (streaming) error:", error)
+    retsContext.errorHandler(error)
   responseHandler = (response) ->
     if done
       return
     done = true
+    retsContext.headerInfo = headersHelper.processHeaders(response.rawHeaders)
     if response.statusCode != 200
-      error = new errors.RetsServerError(methodName, response.statusCode, response.statusMessage, response.rawHeaders)
-      debug("RETS #{methodName} (streaming) error: #{error.message}")
-      failCallback(error)
-    else if responseCallback
-      responseCallback(response)
+      error = new errors.RetsServerError(retsContext, response.statusCode, response.statusMessage)
+      debug("RETS #{retsContext.retsMethod} (streaming) error: #{error.message}")
+      retsContext.errorHandler?(error)
+    else
+      retsContext.responseHandler?(response)
   request = {}
   if client.settings.method == 'POST'
-    request.form = queryOptions
+    request.form = retsContext.queryOptions
   else
-    request.qs = queryOptions
-  if methodName == 'getObject'
+    request.qs = retsContext.queryOptions
+  if retsContext.retsMethod == 'getObject'
     request.headers = { Accept: '*/*' }
-  stream = retsSession(request)
-  stream.on 'error', errorHandler
-  stream.on 'response', responseHandler
+  stream = regularRetsSession(request)
+  stream.on('error', errorHandler)
+  stream.on('response', responseHandler)
+  stream.pipe(retsContext.parser)
+  return retsContext
 
 
 module.exports =

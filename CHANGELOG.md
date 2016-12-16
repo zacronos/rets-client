@@ -1,6 +1,33 @@
+
+#### 5.0
+A significant amount of internal cleanup, resulting in more consistent code and API.  There are some minor breaking
+changes, but they're small enough that migrating to 5.0 shouldn't be much effort.  The
+[Example Usage](https://github.com/sbruno81/rets-client#example-usage) has been updated to show 5.x patterns. 
+
+- object stream queries now have events with a `type` field to make discrimination easier, with the following
+possibilities:
+  - `dataStream`, for a stream containing an object's raw data
+  - `location`, when no stream is available but a URL is available in the `headerInfo` (as per the `Location: 1` option)
+  - `headerInfo`, with the headers for the outer multipart response
+  - `error`, for an error corresponding to a single object rather than the stream as a whole
+- search stream queries now return an object with a `retsStream` field rather than the bare stream
+- the `searchRets` method now returns an object with a `rawStream` field rather than the bare stream
+- headerInfo is now available on every query made
+  - login and logout set `client.loginHeaderInfo` and `client.logoutHeaderInfo`
+  - every streaming query will include an event with `type: 'headerInfo'`
+  - every buffered query (and most streaming queries) will return an object including a `headerInfo` field
+- errors now consistently include response headers as well as the request options
+- all calls made to the RETS server now obey `settings.method` for POST vs GET
+
+#### 4.6.0
+Added support for `Location: 1` option on `getObject` calls.
+
+#### 4.5.0
+Added a new error class for RETS permissions problems on login.
+
 #### 4.4.0
-Added a new `parserEncoding` param for `client.search.query()` and `client.search.stream.query()` calls, defaulting to
-UTF-8.
+Added a new `parserEncoding` param for `client.search.query()` and `client.search.stream.query()` calls.  UTF-8 is the
+default value, so this is to support RETS servers using ISO-8859-1 or some other encoding.
 
 #### 4.3.0
 Added support for TimeZoneOffset and Comments in the `metadata.getSystem()` call response.
@@ -9,9 +36,8 @@ Added support for TimeZoneOffset and Comments in the `metadata.getSystem()` call
 Improved error handling and error classes.  See the [error documentation](https://github.com/sbruno81/rets-client#errors).
 
 #### 4.1.0
-
 Added client configuration option to use POST instead of GET for all requests, as this seems to work better for some
-RETS servers.
+RETS servers.  See the [Example Usage](https://github.com/sbruno81/rets-client#client-configuration).
 
 #### 4.0.0
 

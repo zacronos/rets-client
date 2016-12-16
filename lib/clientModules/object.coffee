@@ -136,8 +136,6 @@ getPreferredObjects = (resourceType, objectType, ids, options) ->
 module.exports = (_retsSession, _client) ->
   if !_retsSession
     throw new errors.RetsParamError('System data not set; invoke login().')
-  retsSession: _retsSession
-  client: _client
   getObjects: getObjects
   getAllObjects: getAllObjects
   getPreferredObjects: getPreferredObjects

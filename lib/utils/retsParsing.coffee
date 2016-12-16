@@ -18,7 +18,7 @@ headersHelper = require('./headers')
 
 
 # a parser with some basic common functionality, intended to be extended for real use
-getSimpleParser = (retsMethod, errCallback, headerInfo, parserEncoding='UTF-8') ->
+getSimpleParser = (retsContext, errCallback, parserEncoding='UTF-8') ->
   result =
     currElementName: null
     parser: new expat.Parser(parserEncoding)
@@ -29,30 +29,33 @@ getSimpleParser = (retsMethod, errCallback, headerInfo, parserEncoding='UTF-8') 
   result.parser.once 'startElement', (name, attrs) ->
     if name != 'RETS'
       result.finish()
-      errCallback(new errors.RetsProcessingError(retsMethod, 'Unexpected results. Please check the RETS URL.', headerInfo))
+      errCallback(new errors.RetsProcessingError(retsContext, 'Unexpected results. Please check the RETS URL.'))
 
   result.parser.on 'startElement', (name, attrs) ->
     result.currElementName = name
     if name != 'RETS' && name != 'RETS-STATUS'
       return
-    result.status = attrs
+    result.status =
+      replyCode: attrs.ReplyCode
+      replyTag: replyCodes.tagMap[attrs.ReplyCode]
+      replyText: attrs.ReplyText
     if attrs.ReplyCode != '0' && attrs.ReplyCode != '20208'
       result.finish()
-      errCallback(new errors.RetsReplyError(retsMethod, attrs.ReplyCode, attrs.ReplyText, headerInfo))
+      errCallback(new errors.RetsReplyError(retsContext, attrs.ReplyCode, attrs.ReplyText))
 
   result.parser.on 'error', (err) ->
     result.finish()
-    errCallback(new errors.RetsProcessingError(retsMethod, "XML parsing error: #{errors.getErrorMessage(err)}", headerInfo))
+    errCallback(new errors.RetsProcessingError(retsContext, "XML parsing error: #{errors.getErrorMessage(err)}"))
 
   result.parser.on 'end', () ->
     result.finish()
-    errCallback(new errors.RetsProcessingError(retsMethod, "Unexpected end of xml stream.", headerInfo))
+    errCallback(new errors.RetsProcessingError(retsContext, "Unexpected end of xml stream."))
 
   result
 
 
 # parser that deals with column/data tags, as returned for metadata and search queries
-getStreamParser = (retsMethod, metadataTag, rawData, parserEncoding='UTF-8') ->
+getStreamParser = (retsContext, metadataTag, rawData, parserEncoding='UTF-8') ->
   if metadataTag
     rawData = false
     result =
@@ -78,16 +81,15 @@ getStreamParser = (retsMethod, metadataTag, rawData, parserEncoding='UTF-8') ->
     parser.on('error', () -> ### noop ###)
     retsStream.write(type: type, payload: payload)
     retsStream.end()
-  fail = (err) ->
+  errorHandler = (err) ->
     finish('error', err)
   writeOutput = (type, payload) ->
     retsStream.write(type: type, payload: payload)
-  response = (response) ->
-    headers = headersHelper.processHeaders(response.rawHeaders)
-    writeOutput('headerInfo', headers)
+  responseHandler = () ->
+    writeOutput('headerInfo', retsContext.headerInfo)
   processStatus = (attrs) ->
     if attrs.ReplyCode != '0' && attrs.ReplyCode != '20208'
-      return fail(new errors.RetsReplyError(retsMethod, attrs.ReplyCode, attrs.ReplyText, headers))
+      return errorHandler(new errors.RetsReplyError(retsContext, attrs.ReplyCode, attrs.ReplyText))
     status =
       replyCode: attrs.ReplyCode
       replyTag: replyCodes.tagMap[attrs.ReplyCode]
@@ -96,7 +98,7 @@ getStreamParser = (retsMethod, metadataTag, rawData, parserEncoding='UTF-8') ->
 
   parser.once 'startElement', (name, attrs) ->
     if name != 'RETS'
-      return fail(new errors.RetsProcessingError(retsMethod, 'Unexpected results. Please check the RETS URL.', headers))
+      return errorHandler(new errors.RetsProcessingError(retsContext, 'Unexpected results. Please check the RETS URL.'))
     processStatus(attrs)
     if !retsStream.writable
       # assume processStatus found a non-zero/20208 error code and ended the stream  So, we don't want to add the startElement listener.
@@ -148,7 +150,7 @@ getStreamParser = (retsMethod, metadataTag, rawData, parserEncoding='UTF-8') ->
       switch name
         when 'DATA'
           if !columns
-            return fail(new errors.RetsProcessingError(retsMethod, 'Failed to parse columns', headers))
+            return errorHandler(new errors.RetsProcessingError(retsContext, 'Failed to parse columns'))
           data = dataText.split(delimiter)
           model = {}
           i=1
@@ -159,7 +161,7 @@ getStreamParser = (retsMethod, metadataTag, rawData, parserEncoding='UTF-8') ->
           result.rowsReceived++
         when 'COLUMNS'
           if !delimiter
-            return fail(new errors.RetsProcessingError(retsMethod, 'Failed to parse delimiter', headers))
+            return errorHandler(new errors.RetsProcessingError(retsContext, 'Failed to parse delimiter'))
           columns = columnText.split(delimiter)
           writeOutput('columns', columns)
         when metadataTag
@@ -171,13 +173,17 @@ getStreamParser = (retsMethod, metadataTag, rawData, parserEncoding='UTF-8') ->
           finish('done', result)
 
   parser.on 'error', (err) ->
-    fail(new errors.RetsProcessingError(retsMethod, "XML parsing error: #{errors.getErrorMessage(err)}", headers))
+    errorHandler(new errors.RetsProcessingError(retsContext, "XML parsing error: #{errors.getErrorMessage(err)}"))
   
   parser.on 'end', () ->
     # we remove event listeners upon success, so getting here implies failure
-    fail(new errors.RetsProcessingError(retsMethod, "Unexpected end of xml stream.", headers))
-  
-  { parser, fail, retsStream, response }
+    errorHandler(new errors.RetsProcessingError(retsContext, "Unexpected end of xml stream."))
+
+  retsContext.parser = parser
+  retsContext.errorHandler = errorHandler
+  retsContext.responseHandler = responseHandler
+  retsContext.retsStream = retsStream
+  retsContext
   
   
 module.exports =

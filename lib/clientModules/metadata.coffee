@@ -11,17 +11,16 @@ retsParsing = require('../utils/retsParsing')
 errors = require('../utils/errors')
 
 
-_getMetadataImpl = (retsSession, type, options, client) -> new Promise (resolve, reject) ->
-  context = retsParsing.getStreamParser('getMetadata', type)
-  retsHttp.streamRetsMethod('getMetadata', retsSession, options, context.fail, context.response, client)
-  .pipe(context.parser)
+_getMetadataImpl = (retsSession, type, queryOptions, client) -> new Promise (resolve, reject) ->
+  retsContext = retsParsing.getStreamParser({retsMethod: 'getMetadata', queryOptions}, type)
+  retsHttp.streamRetsMethod(retsContext, retsSession, client)
 
   result =
     results: []
     type: type
   currEntry = null
 
-  context.retsStream.pipe through2.obj (event, encoding, callback) ->
+  retsContext.retsStream.pipe through2.obj (event, encoding, callback) ->
     switch event.type
       when 'data'
         currEntry.metadata.push(event.payload)
@@ -59,11 +58,11 @@ getMetadata = (type, id, format='COMPACT') -> Promise.try () =>
     throw new errors.RetsParamError('Metadata type is required')
   if !id
     throw new errors.RetsParamError('Resource type id is required (or for some types of metadata, "0" retrieves for all resource types)')
-  options =
+  queryOptions =
     Type: type
     ID: id
     Format: format
-  retsHttp.callRetsMethod('getMetadata', @retsSession, options)
+  retsHttp.callRetsMethod({retsMethod: 'getMetadata', queryOptions}, @retsSession, @client)
 
 
 ###
@@ -72,9 +71,9 @@ getMetadata = (type, id, format='COMPACT') -> Promise.try () =>
 
 getSystem = () ->
   @getMetadata('METADATA-SYSTEM', '0')
-  .then (xmlResponse) -> new Promise (resolve, reject) ->
+  .then (retsContext) -> new Promise (resolve, reject) ->
     result = {}
-    retsParser = retsParsing.getSimpleParser('getMetadata', reject, xmlResponse.headerInfo)
+    retsParser = retsParsing.getSimpleParser(retsContext, reject)
 
     gotMetaDataInfo = false
     gotSystemInfo = false
@@ -107,13 +106,14 @@ getSystem = () ->
         return
       retsParser.finish()
       if !gotSystemInfo || !gotMetaDataInfo
-        reject(new errors.RetsProcessingError('getSystem', 'Failed to parse data'))
+        reject(new errors.RetsProcessingError(retsContext, 'Failed to parse data'))
       else
         if comments.length > 0
           result.comments = comments
+        result.headerInfo = retsContext.headerInfo
         resolve(result)
     
-    retsParser.parser.write(xmlResponse.body)
+    retsParser.parser.write(retsContext.body)
     retsParser.parser.end()
 
 

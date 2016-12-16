@@ -15,26 +15,23 @@ errors = require('./errors')
 ###
 
 login = (retsSession, client) ->
-  retsHttp.callRetsMethod('login', Promise.promisify(retsSession), {})
-  .then (retsResponse) -> new Promise (resolve, reject) ->
-    headers = headersHelper.processHeaders(retsResponse.response.rawHeaders)
-    if client.settings.userAgentPassword && headers.setCookie
+  retsHttp.callRetsMethod({retsMethod: 'login', queryOptions: {}}, retsSession, client)
+  .then (retsContext) -> new Promise (resolve, reject) ->
+    if client.settings.userAgentPassword && retsContext.headerInfo.setCookie
       typeIsArray = Array.isArray || ( value ) -> return {}.toString.call( value ) is '[object Array]'
-      if typeIsArray headers.setCookie
-        headerCookies = headers.setCookie
+      if typeIsArray retsContext.headerInfo.setCookie
+        headerCookies = retsContext.headerInfo.setCookie
       else
-        headerCookies = [headers.setCookie];
+        headerCookies = [retsContext.headerInfo.setCookie];
       for headerCookie in headerCookies
         matches = headerCookie.match(/RETS\-Session\-ID=([^;]+);/)
         if matches
           client.settings.sessionId = matches[1]
           break
-    systemData =
-      retsVersion: headers.retsVersion
-      retsServer: headers.server
-    
-    retsParser = retsParsing.getSimpleParser('login', reject, headers)
-    
+          
+    retsParser = retsParsing.getSimpleParser(retsContext, reject)
+
+    systemData = {}
     gotData = false
     retsParser.parser.on 'text', (text) ->
       if retsParser.currElementName != 'RETS-RESPONSE'
@@ -51,11 +48,11 @@ login = (retsSession, client) ->
         return
       retsParser.finish()
       if !gotData
-        reject(new errors.RetsProcessingError('login', 'Failed to parse data', headers))
+        reject(new errors.RetsProcessingError(retsContext, 'Failed to parse data'))
       else
-        resolve(systemData)
+        resolve({systemData, headerInfo: retsContext.headerInfo})
 
-    retsParser.parser.write(retsResponse.body)
+    retsParser.parser.write(retsContext.body)
     retsParser.parser.end()
 
 
@@ -63,9 +60,10 @@ login = (retsSession, client) ->
 # Logouts RETS user
 ###
 
-logout = (retsSession) ->
-  retsHttp.callRetsMethod('logout', Promise.promisify(retsSession), {})
-
+logout = (retsSession, client) ->
+  retsHttp.callRetsMethod({retsMethod: 'logout', queryOptions: {}}, retsSession, client)
+  .then (retsContext) ->
+    return {headerInfo: retsContext.headerInfo}
 
 module.exports =
   login: login
