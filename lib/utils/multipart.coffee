@@ -41,8 +41,8 @@ getObjectStream = (retsContext, handler) -> new Promise (resolve, reject) ->
     bodyStream = null
     if !objectStream
       return
-    if !err.error || !err.headerInfo
-      err = {type: 'error', error: err, headerInfo: retsContext.headerInfo}
+    if !err.error
+      err = {type: 'error', error: err, headerInfo: (err.headerInfo ? retsContext.headerInfo)}
     objectStream.write(err)
   
   handleEnd = () ->
