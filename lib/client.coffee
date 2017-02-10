@@ -93,9 +93,6 @@ class Client
         missingPermissions.push URL_KEYS.SEARCH
       if @urls[URL_KEYS.GET_OBJECT]
         @objects = object(@baseRetsSession.defaults(uri: @urls[URL_KEYS.GET_OBJECT]), @)
-      else
-        hasPermissions = false
-        missingPermissions.push URL_KEYS.GET_OBJECT
       @logoutRequest = Promise.promisify(@baseRetsSession.defaults(uri: @urls[URL_KEYS.LOGOUT]))
       if !hasPermissions
         throw new errors.RetsPermissionError(missingPermissions)
