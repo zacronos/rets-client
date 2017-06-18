@@ -123,6 +123,8 @@ getObjectStream = (retsContext, handler) -> new Promise (resolve, reject) ->
     debug("stream flush")
     err = parser.end()
     if err
+      done = true
+      partDone = true
       handleError(new errors.RetsProcessingError(retsContext, "Unexpected end of data: #{errors.getErrorMessage(err)}"))
     flushed = true
     handleEnd()
