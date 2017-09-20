@@ -79,6 +79,7 @@ class Client
       for key,val of URL_KEYS
         if @systemData[val]
           @urls[val] = normalizeUrl(@systemData[val], @settings.loginUrl)
+          
       hasPermissions = true
       missingPermissions = []
       if @urls[URL_KEYS.GET_METADATA]
@@ -96,6 +97,12 @@ class Client
       @logoutRequest = Promise.promisify(@baseRetsSession.defaults(uri: @urls[URL_KEYS.LOGOUT]))
       if !hasPermissions
         throw new errors.RetsPermissionError(missingPermissions)
+        
+      if @settings.userAgentPassword && @settings.sessionId
+        a1 = crypto.createHash('md5').update([@settings.userAgent, @settings.userAgentPassword].join(":")).digest('hex')
+        retsUaAuth = crypto.createHash('md5').update([a1, "", @settings.sessionId || "", @settings.version || @headers['RETS-Version']].join(":")).digest('hex')
+        @headers['RETS-UA-Authorization'] = "Digest " + retsUaAuth
+        
       return @
 
   # Logs the user out of the current session
@@ -110,10 +117,6 @@ Client.getAutoLogoutClient = (settings, handler) -> Promise.try () ->
   client.login()
   .then () ->
     Promise.try () ->
-      if client.settings.userAgentPassword && client.settings.sessionId
-        a1 = crypto.createHash('md5').update([client.settings.userAgent, client.settings.userAgentPassword].join(":")).digest('hex')
-        retsUaAuth = crypto.createHash('md5').update([a1, "", client.settings.sessionId || "", client.settings.version || client.headers['RETS-Version']].join(":")).digest('hex')
-        client.headers['RETS-UA-Authorization'] = "Digest " + retsUaAuth
       handler(client)
     .finally () ->
       client.logout()
