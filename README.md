@@ -5,6 +5,9 @@ A RETS (Real Estate Transaction Standard) client for Node.js.
 
 ## Changes
 
+#### 5.1
+Added TypeScript typings.
+
 #### 5.0
 A significant amount of internal cleanup, resulting in more consistent code and API.  There are some minor breaking
 changes, but they're small enough that migrating to 5.0 shouldn't be much effort.  The
