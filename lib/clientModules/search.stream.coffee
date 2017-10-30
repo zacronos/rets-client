@@ -70,7 +70,8 @@ query = (resourceType, classType, queryString, _options={}, rawData=false, parse
 
   # make sure queryType and format will use the searchRets defaults
   delete mainOptions.queryType
-  delete mainOptions.format
+  if mainOptions.format != 'COMPACT-DECODED' && mainOptions.format != 'COMPACT'
+    delete mainOptions.format
   queryOptions = queryOptionHelpers.normalizeOptions(mainOptions)
 
   retsContext = retsParsing.getStreamParser({retsMethod: 'search', queryOptions}, null, rawData, parserEncoding)
