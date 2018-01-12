@@ -61,12 +61,11 @@ getStreamParser = (retsContext, metadataTag, rawData, parserEncoding='UTF-8') ->
     result =
       rowsReceived: 0
       entriesReceived: 0
-    delimiter = '\t'
   else
     result =
       rowsReceived: 0
       maxRowsExceeded: false
-    delimiter = null
+  delimiter = '\t'
   columnText = null
   dataText = null
   columns = null
