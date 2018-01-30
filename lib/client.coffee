@@ -60,6 +60,9 @@ class Client
         'user': @settings.username
         'pass': @settings.password
         'sendImmediately': false
+    
+    if @settings.timeout
+      defaults.timeout = @settings.timeout
 
     if @settings.proxyUrl
       defaults.proxy = @settings.proxyUrl
