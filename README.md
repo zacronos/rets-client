@@ -5,6 +5,9 @@ A RETS (Real Estate Transaction Standard) client for Node.js.
 
 ## Changes
 
+#### 5.2
+Added `timeout` setting, and allow `COMPACT` format.
+
 #### 5.1
 Added TypeScript typings.
 
