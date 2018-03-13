@@ -9,7 +9,7 @@ urlUtil = require('url')
 normalizeUrl = (targetUrl, fullUrl) ->
   loginUrlObj = urlUtil.parse(fullUrl, true, true)
   targetUrlObj = urlUtil.parse(targetUrl, true, true)
-  if targetUrlObj.host !== null
+  if targetUrlObj.host != null
     return targetUrl
   fixedUrlObj =
     protocol: loginUrlObj.protocol
