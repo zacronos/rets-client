@@ -9,7 +9,7 @@
     "bluebird": "^2.9.25",
     "bufferstream": "^0.6.2",
     "debug": "^2.2.0",
-    "formidable": "~1.0.15",
+    "formidable": "~1.1.1",
     "node-expat": "^2.3.10",
     "request": "^2.55.0",
     "request-debug": "^0.2.0",
