@@ -136,7 +136,7 @@ module.exports = (_retsSession, _client) ->
   _getParsedAllMetadataFactory = (type, format='COMPACT') ->
     options =
       Type: type
-      Id: '0'
+      ID: '0'
       Format: format
     () -> _getMetadataImpl(_retsSession, type, options, _client)
   
