@@ -1,6 +1,8 @@
 rets-client
 ===========
-[UNMAINTAINED] RETS (Real Estate Transaction Standard) client for Node.js.
+[UNMAINTAINED]
+
+A  RETS (Real Estate Transaction Standard) client for Node.js.
 
 I haven't had time to work on this for a couple years now, and I no longer work on any projects which use this.
 I think it's a good little project, and while there are things I wish I'd refactored, it has a lot to offer.
