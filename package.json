@@ -40,7 +40,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/sbruno81/rets-client.git"
+    "url": "https://github.com/zacronos/rets-client.git"
   },
   "keywords": [
     "rets",
@@ -56,13 +56,13 @@
     "streams",
     "streaming"
   ],
-  "author": "Steve Bruno <stevenrbruno@icloud.com>",
+  "author": "Joe Ibershoff <joe@ibershoff.com>",
   "contributors": [
-    "Steve Bruno <stevenrbruno@icloud.com>",
-    "Joe Ibershoff <joe@realtymaps.com>"
+    "Joe Ibershoff <joe@ibershoff.com>",
+    "Steve Bruno <stevenrbruno@icloud.com>"
   ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/sbruno81/rets-client/issues"
+    "url": "https://github.com/zacronos/rets-client/issues"
   }
 }
